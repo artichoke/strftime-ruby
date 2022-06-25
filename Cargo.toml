@@ -1,8 +1,45 @@
 [package]
 name = "strftime-ruby"
-version = "0.1.0"
+version = "0.1.0" # remember to set `html_root_url` in `src/lib.rs`.
+authors = ["Ryan Lopopolo <rjl@hyperbo.la>"]
+license = "MIT"
 edition = "2021"
+rust-version = "1.56.0"
+readme = "README.md"
+repository = "https://github.com/artichoke/strftime-ruby"
+documentation = "https://docs.rs/strftime-ruby"
+homepage = "https://github.com/artichoke/strftime-ruby"
+description = "Ruby `Time#strftime` parser and formatter"
+keywords = ["ruby", "strftime", "time"]
+categories = ["date-and-time", "no-std", "parser-implementations", "value-formatting"]
+include = ["src/**/*", "tests/**/*", "vendor/**/*", "LICENSE", "README.md"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "strftime"
+
+[features]
+# All features are enabled by default.
+default = ["std"]
+std = ["alloc"]
+alloc = []
 
 [dependencies]
+
+[dev-dependencies]
+# Property testing for interner getters and setters.
+quickcheck = { version = "1.0.3", default-features = false }
+quickcheck_macros = "1.0.0"
+
+# Check that crate versions are properly updated in documentation and code when
+# bumping the version.
+[dev-dependencies.version-sync]
+version = "0.9.3"
+default-features = false
+features = ["markdown_deps_updated", "html_root_url_updated"]
+
+[package.metadata.docs.rs]
+# This sets the default target to `x86_64-unknown-linux-gnu` and only builds
+# that target. `strftime-ruby` has the same API and code on all targets.
+default-target = "x86_64-unknown-linux-gnu"
+targets = []
+rustdoc-args = ["--cfg", "docsrs"]
