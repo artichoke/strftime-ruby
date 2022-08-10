@@ -27,11 +27,30 @@
 #[doc = include_str!("../README.md")]
 mod readme {}
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
+mod format;
+mod utils;
+mod week;
+
+use format::TimeFormatter;
+
+use std::io;
+
+use spinoso_time::tzrs::Time;
+
+#[derive(Debug)]
+pub enum FormatError {
+    IoError(io::Error),
+    InvalidFormat,
+}
+
+impl From<io::Error> for FormatError {
+    fn from(err: io::Error) -> Self {
+        Self::IoError(err)
     }
+}
+
+pub fn strftime(time: &Time, format: &str) -> Result<Vec<u8>, FormatError> {
+    let mut buf = Vec::new();
+    TimeFormatter::new(time, format).fmt(&mut buf)?;
+    Ok(buf)
 }
