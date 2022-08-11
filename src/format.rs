@@ -350,24 +350,6 @@ impl Piece {
         }
     }
 
-    fn year_width(year: i32) -> usize {
-        let mut n = 1;
-        let mut val = year;
-        loop {
-            val /= 10;
-            if val == 0 {
-                break;
-            }
-            n += 1;
-        }
-
-        if year < 0 {
-            n + 1
-        } else {
-            n
-        }
-    }
-
     #[allow(clippy::too_many_lines)]
     fn fmt(&self, f: &mut SizeLimiter<'_>, time: &Time) -> io::Result<()> {
         match self.spec {
@@ -527,7 +509,7 @@ impl Piece {
             Spec::CombinationDateTime => {
                 let year = time.year();
                 let default_year_width = if year < 0 { 5 } else { 4 };
-                self.write_padding(f, 20 + Self::year_width(year).max(default_year_width))?;
+                self.write_padding(f, 20 + year_width(year).max(default_year_width))?;
 
                 let (day_names, month_names) = match self.case {
                     Some(Case::Upper) => (&DAYS_UPPER, &MONTHS_UPPER),
@@ -557,7 +539,7 @@ impl Piece {
             Spec::CombinationIso8601 => {
                 let year = time.year();
                 let default_year_width = if year < 0 { 5 } else { 4 };
-                self.write_padding(f, 6 + Self::year_width(year).max(default_year_width))?;
+                self.write_padding(f, 6 + year_width(year).max(default_year_width))?;
 
                 let month = time.month();
                 let day = time.day();
@@ -566,7 +548,7 @@ impl Piece {
             }
             Spec::CombinationVmsDate => {
                 let year = time.year();
-                self.write_padding(f, 7 + Self::year_width(year).max(4))?;
+                self.write_padding(f, 7 + year_width(year).max(4))?;
 
                 let month_name = &MONTHS_UPPER[(time.month() - 1) as usize][..3];
                 let day = time.day();
@@ -665,49 +647,62 @@ impl<'t, 'f> TimeFormatter<'t, 'f> {
             let colons = cursor.read_while(|&x| x == b':');
 
             let spec = if colons.is_empty() {
+                const POSSIBLE_SPECS: &[(u8, Spec)] = {
+                    let possible_specs = &[
+                        (b'%', Spec::Percent),
+                        (b'A', Spec::WeekDayName),
+                        (b'B', Spec::MonthName),
+                        (b'C', Spec::YearDiv100),
+                        (b'D', Spec::CombinationDate),
+                        (b'F', Spec::CombinationIso8601),
+                        (b'G', Spec::YearIso8601),
+                        (b'H', Spec::Hour24hZero),
+                        (b'I', Spec::Hour12hZero),
+                        (b'L', Spec::MilliSecond),
+                        (b'M', Spec::Minute),
+                        (b'N', Spec::FractionalSecond),
+                        (b'P', Spec::MeridianLower),
+                        (b'R', Spec::CombinationHourMinute24h),
+                        (b'S', Spec::Second),
+                        (b'T', Spec::CombinationTime24h),
+                        (b'U', Spec::WeekNumberFromSunday),
+                        (b'V', Spec::WeekNumberIso8601),
+                        (b'W', Spec::WeekNumberFromMonday),
+                        (b'X', Spec::CombinationTime24h),
+                        (b'Y', Spec::Year4Digits),
+                        (b'Z', Spec::TimeZoneName),
+                        (b'a', Spec::WeekDayNameAbbr),
+                        (b'b', Spec::MonthNameAbbr),
+                        (b'c', Spec::CombinationDateTime),
+                        (b'd', Spec::MonthDayZero),
+                        (b'e', Spec::MonthDaySpace),
+                        (b'g', Spec::YearIso8601Rem100),
+                        (b'h', Spec::MonthNameAbbr),
+                        (b'j', Spec::YearDay),
+                        (b'k', Spec::Hour24hSpace),
+                        (b'l', Spec::Hour12hSpace),
+                        (b'm', Spec::Month),
+                        (b'n', Spec::Newline),
+                        (b'p', Spec::MeridianUpper),
+                        (b'r', Spec::CombinationTime12h),
+                        (b's', Spec::SecondsSinceEpoch),
+                        (b't', Spec::Tabulation),
+                        (b'u', Spec::WeekDayFrom1),
+                        (b'v', Spec::CombinationVmsDate),
+                        (b'w', Spec::WeekDayFrom0),
+                        (b'x', Spec::CombinationDate),
+                        (b'y', Spec::YearRem100),
+                        (b'z', Spec::TimeZoneOffsetHourMinute),
+                    ];
+                    assert_sorted_spec(possible_specs);
+                    possible_specs
+                };
+
                 match cursor.next() {
-                    Some(b'Y') => Some(Spec::Year4Digits),
-                    Some(b'C') => Some(Spec::YearDiv100),
-                    Some(b'y') => Some(Spec::YearRem100),
-                    Some(b'm') => Some(Spec::Month),
-                    Some(b'B') => Some(Spec::MonthName),
-                    Some(b'b' | b'h') => Some(Spec::MonthNameAbbr),
-                    Some(b'd') => Some(Spec::MonthDayZero),
-                    Some(b'e') => Some(Spec::MonthDaySpace),
-                    Some(b'j') => Some(Spec::YearDay),
-                    Some(b'H') => Some(Spec::Hour24hZero),
-                    Some(b'k') => Some(Spec::Hour24hSpace),
-                    Some(b'I') => Some(Spec::Hour12hZero),
-                    Some(b'l') => Some(Spec::Hour12hSpace),
-                    Some(b'P') => Some(Spec::MeridianLower),
-                    Some(b'p') => Some(Spec::MeridianUpper),
-                    Some(b'M') => Some(Spec::Minute),
-                    Some(b'S') => Some(Spec::Second),
-                    Some(b'L') => Some(Spec::MilliSecond),
-                    Some(b'N') => Some(Spec::FractionalSecond),
-                    Some(b'z') => Some(Spec::TimeZoneOffsetHourMinute),
-                    Some(b'Z') => Some(Spec::TimeZoneName),
-                    Some(b'A') => Some(Spec::WeekDayName),
-                    Some(b'a') => Some(Spec::WeekDayNameAbbr),
-                    Some(b'u') => Some(Spec::WeekDayFrom1),
-                    Some(b'w') => Some(Spec::WeekDayFrom0),
-                    Some(b'G') => Some(Spec::YearIso8601),
-                    Some(b'g') => Some(Spec::YearIso8601Rem100),
-                    Some(b'V') => Some(Spec::WeekNumberIso8601),
-                    Some(b'U') => Some(Spec::WeekNumberFromSunday),
-                    Some(b'W') => Some(Spec::WeekNumberFromMonday),
-                    Some(b's') => Some(Spec::SecondsSinceEpoch),
-                    Some(b'n') => Some(Spec::Newline),
-                    Some(b't') => Some(Spec::Tabulation),
-                    Some(b'%') => Some(Spec::Percent),
-                    Some(b'c') => Some(Spec::CombinationDateTime),
-                    Some(b'D' | b'x') => Some(Spec::CombinationDate),
-                    Some(b'F') => Some(Spec::CombinationIso8601),
-                    Some(b'v') => Some(Spec::CombinationVmsDate),
-                    Some(b'r') => Some(Spec::CombinationTime12h),
-                    Some(b'R') => Some(Spec::CombinationHourMinute24h),
-                    Some(b'T' | b'X') => Some(Spec::CombinationTime24h),
-                    Some(_) => None,
+                    Some(x) => match POSSIBLE_SPECS.binary_search_by_key(&x, |&(c, _)| c) {
+                        Ok(index) => Some(POSSIBLE_SPECS[index].1),
+                        Err(_) => None,
+                    },
                     None => return Err(FormatError::InvalidFormat),
                 }
             } else if cursor.read_optional_tag(b"z") {
@@ -732,6 +727,32 @@ impl<'t, 'f> TimeFormatter<'t, 'f> {
         }
 
         Ok(())
+    }
+}
+
+fn year_width(year: i32) -> usize {
+    let mut n = 1;
+    let mut val = year;
+    loop {
+        val /= 10;
+        if val == 0 {
+            break;
+        }
+        n += 1;
+    }
+
+    if year < 0 {
+        n + 1
+    } else {
+        n
+    }
+}
+
+const fn assert_sorted_spec(s: &[(u8, Spec)]) {
+    let mut i = 0;
+    while i + 1 < s.len() {
+        assert!(s[i].0 < s[i + 1].0);
+        i += 1;
     }
 }
 
