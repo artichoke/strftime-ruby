@@ -653,15 +653,14 @@ impl<'t, 'f> TimeFormatter<'t, 'f> {
                 .parse()
                 .ok();
 
-            // Possible modified conversion specifiers are ignored.
-            // See https://pubs.opengroup.org/onlinepubs/9699919799/functions/strftime.html.
-            if let Some(
-                b"Ec" | b"EC" | b"Ex" | b"EX" | b"Ey" | b"EY" | b"Od" | b"Oe" | b"OH" | b"OI"
-                | b"Om" | b"OM" | b"OS" | b"Ou" | b"OU" | b"OV" | b"Ow" | b"OW" | b"Oy",
-            ) = cursor.remaining().get(..2)
-            {
-                cursor.next();
-            };
+            // Ignore POSIX locale extensions (https://github.com/ruby/ruby/blob/4491bb740a9506d76391ac44bb2fe6e483fec952/strftime.c#L713-L722)
+            if let Some(&[x1, x2]) = cursor.remaining().get(..2) {
+                if x1 == b'E' && b"CXYcxy".binary_search(&x2).is_ok()
+                    || x1 == b'O' && b"HIMSUVWdeklmuwy".binary_search(&x2).is_ok()
+                {
+                    cursor.next();
+                }
+            }
 
             let colons = cursor.read_while(|&x| x == b':');
 
