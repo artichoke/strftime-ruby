@@ -393,13 +393,13 @@ impl Piece {
             Spec::Hour24hZero => self.format_num_zeros(f, time.hour(), 2),
             Spec::Hour24hSpace => self.format_num_spaces(f, time.hour(), 2),
             Spec::Hour12hZero => {
-                let mut hour = time.hour() % 12;
-                hour = if hour == 0 { 12 } else { hour };
+                let hour = time.hour() % 12;
+                let hour = if hour == 0 { 12 } else { hour };
                 self.format_num_zeros(f, hour, 2)
             }
             Spec::Hour12hSpace => {
-                let mut hour = time.hour() % 12;
-                hour = if hour == 0 { 12 } else { hour };
+                let hour = time.hour() % 12;
+                let hour = if hour == 0 { 12 } else { hour };
                 self.format_num_spaces(f, hour, 2)
             }
             Spec::MeridianLower => {
@@ -474,8 +474,8 @@ impl Piece {
                 }
             }
             Spec::WeekDayFrom1 => {
-                let mut day_of_week = time.day_of_week();
-                day_of_week = if day_of_week == 0 { 7 } else { day_of_week };
+                let day_of_week = time.day_of_week();
+                let day_of_week = if day_of_week == 0 { 7 } else { day_of_week };
                 self.format_num_zeros(f, day_of_week, 1)
             }
             Spec::WeekDayFrom0 => self.format_num_zeros(f, time.day_of_week(), 1),
@@ -577,8 +577,8 @@ impl Piece {
             Spec::CombinationTime12h => {
                 self.write_padding(f, 11)?;
 
-                let mut hour = time.hour() % 12;
-                hour = if hour == 0 { 12 } else { hour };
+                let hour = time.hour() % 12;
+                let hour = if hour == 0 { 12 } else { hour };
 
                 let (minute, second) = (time.minute(), time.second());
                 let meridian = if time.hour() < 12 { "AM" } else { "PM" };
