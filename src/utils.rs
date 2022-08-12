@@ -105,6 +105,7 @@ pub struct Upper<'a>(&'a [u8]);
 impl<'a> Upper<'a> {
     /// Construct a new `Upper` wrapper
     pub fn new(buf: &'a [u8]) -> Self {
+        assert!(buf.is_ascii());
         Self(buf)
     }
 }
@@ -125,6 +126,7 @@ pub struct Lower<'a>(&'a [u8]);
 impl<'a> Lower<'a> {
     /// Construct a new `Lower` wrapper
     pub fn new(buf: &'a [u8]) -> Self {
+        assert!(buf.is_ascii());
         Self(buf)
     }
 }
