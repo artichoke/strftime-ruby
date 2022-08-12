@@ -109,11 +109,11 @@ mod tests {
         assert_eq!(iso_8601_year_and_week_number(2027, 0, 3), (2026, 53));
         assert_eq!(iso_8601_year_and_week_number(2027, 1, 4), (2027, 1));
 
-        assert_eq!(iso_8601_year_and_week_number(2020, 0, 361), (2020, 52));
-        assert_eq!(iso_8601_year_and_week_number(2020, 1, 362), (2020, 53));
-        assert_eq!(iso_8601_year_and_week_number(2020, 2, 363), (2020, 53));
-        assert_eq!(iso_8601_year_and_week_number(2020, 3, 364), (2020, 53));
-        assert_eq!(iso_8601_year_and_week_number(2020, 4, 365), (2020, 53));
+        assert_eq!(iso_8601_year_and_week_number(2020, 0, 362), (2020, 52));
+        assert_eq!(iso_8601_year_and_week_number(2020, 1, 363), (2020, 53));
+        assert_eq!(iso_8601_year_and_week_number(2020, 2, 364), (2020, 53));
+        assert_eq!(iso_8601_year_and_week_number(2020, 3, 365), (2020, 53));
+        assert_eq!(iso_8601_year_and_week_number(2020, 4, 366), (2020, 53));
         assert_eq!(iso_8601_year_and_week_number(2021, 5, 1), (2020, 53));
         assert_eq!(iso_8601_year_and_week_number(2021, 6, 2), (2020, 53));
         assert_eq!(iso_8601_year_and_week_number(2021, 0, 3), (2020, 53));
