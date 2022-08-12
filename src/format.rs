@@ -1,5 +1,6 @@
 use std::fmt;
 use std::io::{self, Write};
+use std::num::IntErrorKind;
 use std::str;
 
 use bitflags::bitflags;
@@ -8,6 +9,7 @@ use spinoso_time::tzrs::Time;
 use crate::utils::{Cursor, Lower, SizeLimiter, Upper};
 use crate::week::{iso_8601_year_and_week_number, week_number, WeekStart};
 use crate::FormatError;
+use assert::{assert_is_ascii_uppercase, assert_sorted, assert_sorted_spec};
 
 const DAYS: [&str; 7] = [
     "Sunday",
@@ -58,6 +60,11 @@ const MONTHS_UPPER: [&str; 12] = [
     "NOVEMBER",
     "DECEMBER",
 ];
+
+const _: () = {
+    assert_is_ascii_uppercase(&DAYS, &DAYS_UPPER);
+    assert_is_ascii_uppercase(&MONTHS, &MONTHS_UPPER);
+};
 
 bitflags! {
     struct Flags: u32 {
@@ -605,7 +612,6 @@ impl<'t, 'f> TimeFormatter<'t, 'f> {
         }
     }
 
-    #[allow(clippy::too_many_lines)]
     pub fn fmt(&self, buf: &mut dyn Write) -> Result<(), FormatError> {
         // Use a size limiter to avoid large writes
         let size_limit = self.format.len().saturating_mul(1024 * 1024).max(1024);
@@ -623,124 +629,132 @@ impl<'t, 'f> TimeFormatter<'t, 'f> {
                 break;
             }
 
-            // Parse flags
-            let mut padding = Padding::default();
-            let mut flags = Flags::empty();
-
-            loop {
-                match cursor.remaining().first() {
-                    Some(&b'-') => {
-                        padding = Padding::Left;
-                        flags.insert(Flags::LEFT_PADDING);
-                    }
-                    Some(&b'_') => padding = Padding::Spaces,
-                    Some(&b'0') => padding = Padding::Zeros,
-                    Some(&b'^') => flags.insert(Flags::UPPER_CASE),
-                    Some(&b'#') => flags.insert(Flags::CHANGE_CASE),
-                    _ => break,
+            match Self::parse_spec(&mut cursor)? {
+                Some(piece) => piece.fmt(&mut f, self.time)?,
+                None => {
+                    // No valid format specifier was found
+                    let remaining_after = cursor.remaining();
+                    let text = &remaining_before[..remaining_before.len() - remaining_after.len()];
+                    f.write_all(text)?;
                 }
-                cursor.next();
-            }
-
-            // Parse width
-            let width = str::from_utf8(cursor.read_while(u8::is_ascii_digit))
-                .unwrap()
-                .parse()
-                .ok();
-
-            // Ignore POSIX locale extensions (https://github.com/ruby/ruby/blob/4491bb740a9506d76391ac44bb2fe6e483fec952/strftime.c#L713-L722)
-            if let Some(&[x1, x2]) = cursor.remaining().get(..2) {
-                if x1 == b'E' && b"CXYcxy".binary_search(&x2).is_ok()
-                    || x1 == b'O' && b"HIMSUVWdeklmuwy".binary_search(&x2).is_ok()
-                {
-                    cursor.next();
-                }
-            }
-
-            // Parse spec
-            let colons = cursor.read_while(|&x| x == b':');
-
-            let spec = if colons.is_empty() {
-                const POSSIBLE_SPECS: &[(u8, Spec)] = {
-                    let possible_specs = &[
-                        (b'%', Spec::Percent),
-                        (b'A', Spec::WeekDayName),
-                        (b'B', Spec::MonthName),
-                        (b'C', Spec::YearDiv100),
-                        (b'D', Spec::CombinationDate),
-                        (b'F', Spec::CombinationIso8601),
-                        (b'G', Spec::YearIso8601),
-                        (b'H', Spec::Hour24hZero),
-                        (b'I', Spec::Hour12hZero),
-                        (b'L', Spec::MilliSecond),
-                        (b'M', Spec::Minute),
-                        (b'N', Spec::FractionalSecond),
-                        (b'P', Spec::MeridianLower),
-                        (b'R', Spec::CombinationHourMinute24h),
-                        (b'S', Spec::Second),
-                        (b'T', Spec::CombinationTime24h),
-                        (b'U', Spec::WeekNumberFromSunday),
-                        (b'V', Spec::WeekNumberIso8601),
-                        (b'W', Spec::WeekNumberFromMonday),
-                        (b'X', Spec::CombinationTime24h),
-                        (b'Y', Spec::Year4Digits),
-                        (b'Z', Spec::TimeZoneName),
-                        (b'a', Spec::WeekDayNameAbbr),
-                        (b'b', Spec::MonthNameAbbr),
-                        (b'c', Spec::CombinationDateTime),
-                        (b'd', Spec::MonthDayZero),
-                        (b'e', Spec::MonthDaySpace),
-                        (b'g', Spec::YearIso8601Rem100),
-                        (b'h', Spec::MonthNameAbbr),
-                        (b'j', Spec::YearDay),
-                        (b'k', Spec::Hour24hSpace),
-                        (b'l', Spec::Hour12hSpace),
-                        (b'm', Spec::Month),
-                        (b'n', Spec::Newline),
-                        (b'p', Spec::MeridianUpper),
-                        (b'r', Spec::CombinationTime12h),
-                        (b's', Spec::SecondsSinceEpoch),
-                        (b't', Spec::Tabulation),
-                        (b'u', Spec::WeekDayFrom1),
-                        (b'v', Spec::CombinationVmsDate),
-                        (b'w', Spec::WeekDayFrom0),
-                        (b'x', Spec::CombinationDate),
-                        (b'y', Spec::YearRem100),
-                        (b'z', Spec::TimeZoneOffsetHourMinute),
-                    ];
-                    assert_sorted_spec(possible_specs);
-                    possible_specs
-                };
-
-                match cursor.next() {
-                    Some(x) => match POSSIBLE_SPECS.binary_search_by_key(&x, |&(c, _)| c) {
-                        Ok(index) => Some(POSSIBLE_SPECS[index].1),
-                        Err(_) => None,
-                    },
-                    None => return Err(FormatError::InvalidFormat),
-                }
-            } else if cursor.read_optional_tag(b"z") {
-                match colons.len() {
-                    1 => Some(Spec::TimeZoneOffsetHourMinuteColon),
-                    2 => Some(Spec::TimeZoneOffsetHourMinuteSecondColon),
-                    3 => Some(Spec::TimeZoneOffsetColonMinimal),
-                    _ => None,
-                }
-            } else {
-                None
-            };
-
-            if let Some(spec) = spec {
-                Piece::new(width, padding, flags, spec).fmt(&mut f, self.time)?;
-            } else {
-                // No valid format spec found
-                let remaining_after = cursor.remaining();
-                let text = &remaining_before[..remaining_before.len() - remaining_after.len()];
-                f.write_all(text)?;
             }
         }
 
         Ok(())
+    }
+
+    fn parse_spec(cursor: &mut Cursor<'_>) -> Result<Option<Piece>, FormatError> {
+        // Parse flags
+        let mut padding = Padding::default();
+        let mut flags = Flags::empty();
+
+        loop {
+            match cursor.remaining().first() {
+                Some(&b'-') => {
+                    padding = Padding::Left;
+                    flags.insert(Flags::LEFT_PADDING);
+                }
+                Some(&b'_') => padding = Padding::Spaces,
+                Some(&b'0') => padding = Padding::Zeros,
+                Some(&b'^') => flags.insert(Flags::UPPER_CASE),
+                Some(&b'#') => flags.insert(Flags::CHANGE_CASE),
+                _ => break,
+            }
+            cursor.next();
+        }
+
+        // Parse width
+        let width_digits = str::from_utf8(cursor.read_while(u8::is_ascii_digit))
+            .expect("reading ASCII digits should yield a valid UTF-8 slice");
+
+        let width = match width_digits.parse::<usize>() {
+            Ok(width) => Some(width),
+            Err(err) if *err.kind() == IntErrorKind::Empty => None,
+            Err(_) => return Ok(None),
+        };
+
+        // Ignore POSIX locale extensions (https://github.com/ruby/ruby/blob/4491bb740a9506d76391ac44bb2fe6e483fec952/strftime.c#L713-L722)
+        if let Some(&[ext, spec]) = cursor.remaining().get(..2) {
+            const EXT_E_SPECS: &[u8] = assert_sorted(b"CXYcxy");
+            const EXT_O_SPECS: &[u8] = assert_sorted(b"HIMSUVWdeklmuwy");
+
+            match ext {
+                b'E' if EXT_E_SPECS.binary_search(&spec).is_ok() => cursor.next(),
+                b'O' if EXT_O_SPECS.binary_search(&spec).is_ok() => cursor.next(),
+                _ => None,
+            };
+        }
+
+        // Parse spec
+        let colons = cursor.read_while(|&x| x == b':');
+
+        let spec = if colons.is_empty() {
+            const POSSIBLE_SPECS: &[(u8, Spec)] = assert_sorted_spec(&[
+                (b'%', Spec::Percent),
+                (b'A', Spec::WeekDayName),
+                (b'B', Spec::MonthName),
+                (b'C', Spec::YearDiv100),
+                (b'D', Spec::CombinationDate),
+                (b'F', Spec::CombinationIso8601),
+                (b'G', Spec::YearIso8601),
+                (b'H', Spec::Hour24hZero),
+                (b'I', Spec::Hour12hZero),
+                (b'L', Spec::MilliSecond),
+                (b'M', Spec::Minute),
+                (b'N', Spec::FractionalSecond),
+                (b'P', Spec::MeridianLower),
+                (b'R', Spec::CombinationHourMinute24h),
+                (b'S', Spec::Second),
+                (b'T', Spec::CombinationTime24h),
+                (b'U', Spec::WeekNumberFromSunday),
+                (b'V', Spec::WeekNumberIso8601),
+                (b'W', Spec::WeekNumberFromMonday),
+                (b'X', Spec::CombinationTime24h),
+                (b'Y', Spec::Year4Digits),
+                (b'Z', Spec::TimeZoneName),
+                (b'a', Spec::WeekDayNameAbbr),
+                (b'b', Spec::MonthNameAbbr),
+                (b'c', Spec::CombinationDateTime),
+                (b'd', Spec::MonthDayZero),
+                (b'e', Spec::MonthDaySpace),
+                (b'g', Spec::YearIso8601Rem100),
+                (b'h', Spec::MonthNameAbbr),
+                (b'j', Spec::YearDay),
+                (b'k', Spec::Hour24hSpace),
+                (b'l', Spec::Hour12hSpace),
+                (b'm', Spec::Month),
+                (b'n', Spec::Newline),
+                (b'p', Spec::MeridianUpper),
+                (b'r', Spec::CombinationTime12h),
+                (b's', Spec::SecondsSinceEpoch),
+                (b't', Spec::Tabulation),
+                (b'u', Spec::WeekDayFrom1),
+                (b'v', Spec::CombinationVmsDate),
+                (b'w', Spec::WeekDayFrom0),
+                (b'x', Spec::CombinationDate),
+                (b'y', Spec::YearRem100),
+                (b'z', Spec::TimeZoneOffsetHourMinute),
+            ]);
+
+            match cursor.next() {
+                Some(x) => match POSSIBLE_SPECS.binary_search_by_key(&x, |&(c, _)| c) {
+                    Ok(index) => Some(POSSIBLE_SPECS[index].1),
+                    Err(_) => None,
+                },
+                None => return Err(FormatError::InvalidFormat),
+            }
+        } else if cursor.read_optional_tag(b"z") {
+            match colons.len() {
+                1 => Some(Spec::TimeZoneOffsetHourMinuteColon),
+                2 => Some(Spec::TimeZoneOffsetHourMinuteSecondColon),
+                3 => Some(Spec::TimeZoneOffsetColonMinimal),
+                _ => None,
+            }
+        } else {
+            None
+        };
+
+        Ok(spec.map(|spec| Piece::new(width, padding, flags, spec)))
     }
 }
 
@@ -762,11 +776,51 @@ fn year_width(year: i32) -> usize {
     }
 }
 
-const fn assert_sorted_spec(s: &[(u8, Spec)]) {
-    let mut i = 0;
-    while i + 1 < s.len() {
-        assert!(s[i].0 < s[i + 1].0);
-        i += 1;
+mod assert {
+    use super::Spec;
+
+    macro_rules! assert_sorted_by_key {
+        ($s:expr, $f:expr) => {{
+            let mut i = 0;
+            while i + 1 < $s.len() {
+                assert!($f($s[i]) < $f($s[i + 1]));
+                i += 1;
+            }
+            $s
+        }};
+    }
+
+    const fn to_spec_char((c, _): (u8, Spec)) -> u8 {
+        c
+    }
+
+    pub(super) const fn assert_sorted(s: &[u8]) -> &[u8] {
+        assert_sorted_by_key!(s, std::convert::identity)
+    }
+
+    pub(super) const fn assert_sorted_spec(s: &[(u8, Spec)]) -> &[(u8, Spec)] {
+        assert_sorted_by_key!(s, to_spec_char)
+    }
+
+    #[allow(dead_code)]
+    pub(super) const fn assert_is_ascii_uppercase(table: &[&str], upper_table: &[&str]) {
+        assert!(table.len() == upper_table.len());
+
+        let mut index = 0;
+        while index < table.len() {
+            let (s, upper_s) = (table[index].as_bytes(), upper_table[index].as_bytes());
+            assert!(s.len() == upper_s.len());
+
+            let mut i = 0;
+            while i < s.len() {
+                assert!(s[i].is_ascii());
+                assert!(upper_s[i].is_ascii());
+                assert!(upper_s[i] == s[i].to_ascii_uppercase());
+                i += 1;
+            }
+
+            index += 1;
+        }
     }
 }
 
@@ -870,6 +924,8 @@ mod tests {
         assert_eq!(format(&time2, "'%-_10:::z'").unwrap(), "'  +0:09:21'");
         assert_eq!(format(&time3, "'%-_10:::z'").unwrap(), "'        +1'");
 
+        assert_eq!(format(&time, "'%-_10::::z'").unwrap(), "'%-_10::::z'");
+
         let time4 = Time::new(1, 1, 1, 1, 1, 1, 1, Offset::fixed(0).unwrap()).unwrap();
         let time5 = Time::new(1, 1, 1, 1, 1, 1, 1, TimeZoneRef::utc().into()).unwrap();
 
@@ -895,13 +951,20 @@ mod tests {
     }
 
     #[test]
-    fn test_format_too_large() {
+    fn test_format_large_width() {
         let time_zone_ref = tzdb::tz_by_name("Europe/Paris").unwrap();
         let time = Time::new(1, 1, 1, 1, 1, 1, 1, time_zone_ref.into()).unwrap();
 
+        assert_eq!(format(&time, "%-100000000Y").unwrap(), "1");
+
+        assert_eq!(
+            format(&time, "%100000000000000000000Y").unwrap(),
+            "%100000000000000000000Y"
+        );
+
         assert!(matches!(
             format(&time, "%100000000Y").unwrap_err(),
-            FormatError::IoError(err @ io::Error { .. }) if err.kind() == io::ErrorKind::WriteZero,
+            FormatError::IoError(err) if err.kind() == io::ErrorKind::WriteZero,
         ));
     }
 }
