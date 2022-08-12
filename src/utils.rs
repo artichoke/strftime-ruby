@@ -1,4 +1,4 @@
-use core::fmt::{self, Write};
+use std::fmt::{self, Write};
 use std::io;
 
 /// A `Cursor` contains a slice of a buffer.

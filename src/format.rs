@@ -1,12 +1,13 @@
+use std::fmt;
+use std::io::{self, Write};
+use std::str;
+
+use bitflags::bitflags;
+use spinoso_time::tzrs::Time;
+
 use crate::utils::{Cursor, Lower, SizeLimiter, Upper};
 use crate::week::{iso_8601_year_and_week_number, week_number, WeekStart};
 use crate::FormatError;
-
-use core::fmt;
-use core::str;
-use std::io::{self, Write};
-
-use spinoso_time::tzrs::Time;
 
 const DAYS: [&str; 7] = [
     "Sunday",
@@ -58,17 +59,27 @@ const MONTHS_UPPER: [&str; 12] = [
     "DECEMBER",
 ];
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+bitflags! {
+    struct Flags: u32 {
+        const LEFT_PADDING = 1 << 0;
+        const CHANGE_CASE  = 1 << 1;
+        const UPPER_CASE   = 1 << 2;
+    }
+}
+
+impl Flags {
+    fn has_change_or_upper_case(self) -> bool {
+        let flag = Flags::CHANGE_CASE | Flags::UPPER_CASE;
+        !self.intersection(flag).is_empty()
+    }
+}
+
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
 enum Padding {
+    #[default]
     Left,
     Spaces,
     Zeros,
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-enum Case {
-    Change,
-    Upper,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -184,24 +195,16 @@ impl UtcOffset {
 struct Piece {
     width: Option<usize>,
     padding: Padding,
-    has_left_padding: bool,
-    case: Option<Case>,
+    flags: Flags,
     spec: Spec,
 }
 
 impl Piece {
-    fn new(
-        width: Option<usize>,
-        padding: Padding,
-        has_left_padding: bool,
-        case: Option<Case>,
-        spec: Spec,
-    ) -> Self {
+    fn new(width: Option<usize>, padding: Padding, flags: Flags, spec: Spec) -> Self {
         Self {
             width,
             padding,
-            has_left_padding,
-            case,
+            flags,
             spec,
         }
     }
@@ -212,7 +215,7 @@ impl Piece {
         value: impl fmt::Display,
         default_width: usize,
     ) -> io::Result<()> {
-        if self.has_left_padding {
+        if self.flags.contains(Flags::LEFT_PADDING) {
             write!(f, "{}", value)
         } else if self.padding == Padding::Spaces {
             let width = self.width.unwrap_or(default_width);
@@ -229,7 +232,7 @@ impl Piece {
         value: impl fmt::Display,
         default_width: usize,
     ) -> io::Result<()> {
-        if self.has_left_padding {
+        if self.flags.contains(Flags::LEFT_PADDING) {
             write!(f, "{}", value)
         } else if self.padding == Padding::Zeros {
             let width = self.width.unwrap_or(default_width);
@@ -260,7 +263,7 @@ impl Piece {
         match self.width {
             None => write!(f, "{}", s),
             Some(width) => {
-                if self.has_left_padding {
+                if self.flags.contains(Flags::LEFT_PADDING) {
                     write!(f, "{}", s)
                 } else if self.padding == Padding::Zeros {
                     write!(f, "{:0>width$}", s)
@@ -275,7 +278,7 @@ impl Piece {
         let utc_offset = time.utc_offset();
         let utc_offset_abs = utc_offset.unsigned_abs();
 
-        let sign = if utc_offset < 0 || time.is_utc() && self.has_left_padding {
+        let sign = if utc_offset < 0 || time.is_utc() && self.flags.contains(Flags::LEFT_PADDING) {
             -1.0
         } else {
             1.0
@@ -363,16 +366,18 @@ impl Piece {
             Spec::Month => self.format_num_zeros(f, time.month(), 2),
             Spec::MonthName => {
                 let index = (time.month() - 1) as usize;
-                match self.case {
-                    Some(_) => self.format_string(f, MONTHS_UPPER[index]),
-                    None => self.format_string(f, MONTHS[index]),
+                if self.flags.has_change_or_upper_case() {
+                    self.format_string(f, MONTHS_UPPER[index])
+                } else {
+                    self.format_string(f, MONTHS[index])
                 }
             }
             Spec::MonthNameAbbr => {
                 let index = (time.month() - 1) as usize;
-                match self.case {
-                    Some(_) => self.format_string(f, &MONTHS_UPPER[index][..3]),
-                    None => self.format_string(f, &MONTHS[index][..3]),
+                if self.flags.has_change_or_upper_case() {
+                    self.format_string(f, &MONTHS_UPPER[index][..3])
+                } else {
+                    self.format_string(f, &MONTHS[index][..3])
                 }
             }
             Spec::MonthDayZero => self.format_num_zeros(f, time.day(), 2),
@@ -391,17 +396,19 @@ impl Piece {
                 self.format_num_spaces(f, hour, 2)
             }
             Spec::MeridianLower => {
-                let (am, pm) = match self.case {
-                    Some(_) => ("AM", "PM"),
-                    None => ("am", "pm"),
+                let (am, pm) = if self.flags.has_change_or_upper_case() {
+                    ("AM", "PM")
+                } else {
+                    ("am", "pm")
                 };
                 let meridian = if time.hour() < 12 { am } else { pm };
                 self.format_string(f, meridian)
             }
             Spec::MeridianUpper => {
-                let (am, pm) = match self.case {
-                    Some(Case::Change) => ("am", "pm"),
-                    _ => ("AM", "PM"),
+                let (am, pm) = if self.flags.contains(Flags::CHANGE_CASE) {
+                    ("am", "pm")
+                } else {
+                    ("AM", "PM")
                 };
                 let meridian = if time.hour() < 12 { am } else { pm };
                 self.format_string(f, meridian)
@@ -433,26 +440,30 @@ impl Piece {
             Spec::TimeZoneName => {
                 let tz_name = time.time_zone();
                 if !tz_name.is_empty() {
-                    match self.case {
-                        Some(Case::Change) => self.format_string(f, Lower::new(tz_name.as_bytes())),
-                        Some(Case::Upper) => self.format_string(f, Upper::new(tz_name.as_bytes())),
-                        None => self.format_string(f, tz_name),
-                    }?;
+                    if self.flags.contains(Flags::CHANGE_CASE) {
+                        self.format_string(f, Lower::new(tz_name.as_bytes()))?;
+                    } else if self.flags.contains(Flags::UPPER_CASE) {
+                        self.format_string(f, Upper::new(tz_name.as_bytes()))?;
+                    } else {
+                        self.format_string(f, tz_name)?;
+                    }
                 }
                 Ok(())
             }
             Spec::WeekDayName => {
                 let index = time.day_of_week() as usize;
-                match self.case {
-                    Some(_) => self.format_string(f, DAYS_UPPER[index]),
-                    None => self.format_string(f, DAYS[index]),
+                if self.flags.has_change_or_upper_case() {
+                    self.format_string(f, DAYS_UPPER[index])
+                } else {
+                    self.format_string(f, DAYS[index])
                 }
             }
             Spec::WeekDayNameAbbr => {
                 let index = time.day_of_week() as usize;
-                match self.case {
-                    Some(_) => self.format_string(f, &DAYS_UPPER[index][..3]),
-                    None => self.format_string(f, &DAYS[index][..3]),
+                if self.flags.has_change_or_upper_case() {
+                    self.format_string(f, &DAYS_UPPER[index][..3])
+                } else {
+                    self.format_string(f, &DAYS[index][..3])
                 }
             }
             Spec::WeekDayFrom1 => {
@@ -511,9 +522,10 @@ impl Piece {
                 let default_year_width = if year < 0 { 5 } else { 4 };
                 self.write_padding(f, 20 + year_width(year).max(default_year_width))?;
 
-                let (day_names, month_names) = match self.case {
-                    Some(Case::Upper) => (&DAYS_UPPER, &MONTHS_UPPER),
-                    _ => (&DAYS, &MONTHS),
+                let (day_names, month_names) = if self.flags.contains(Flags::UPPER_CASE) {
+                    (&DAYS_UPPER, &MONTHS_UPPER)
+                } else {
+                    (&DAYS, &MONTHS)
                 };
 
                 let week_day_name = &day_names[time.day_of_week() as usize][..3];
@@ -606,30 +618,31 @@ impl<'t, 'f> TimeFormatter<'t, 'f> {
 
             let remaining_before = cursor.remaining();
 
+            // Read the '%' character
             if cursor.next().is_none() {
                 break;
             }
 
-            let flags = cursor.read_while(|&x| matches!(x, b'-' | b'_' | b'0' | b'^' | b'#'));
+            // Parse flags
+            let mut padding = Padding::default();
+            let mut flags = Flags::empty();
 
-            let mut padding = Padding::Left;
-            let mut has_left_padding = false;
-            let mut case = None;
-
-            for &flag in flags {
-                match flag {
-                    b'-' => {
+            loop {
+                match cursor.remaining().first() {
+                    Some(&b'-') => {
                         padding = Padding::Left;
-                        has_left_padding = true;
+                        flags.insert(Flags::LEFT_PADDING);
                     }
-                    b'_' => padding = Padding::Spaces,
-                    b'0' => padding = Padding::Zeros,
-                    b'^' if case != Some(Case::Change) => case = Some(Case::Upper),
-                    b'#' => case = Some(Case::Change),
-                    _ => (),
+                    Some(&b'_') => padding = Padding::Spaces,
+                    Some(&b'0') => padding = Padding::Zeros,
+                    Some(&b'^') => flags.insert(Flags::UPPER_CASE),
+                    Some(&b'#') => flags.insert(Flags::CHANGE_CASE),
+                    _ => break,
                 }
+                cursor.next();
             }
 
+            // Parse width
             let width = str::from_utf8(cursor.read_while(u8::is_ascii_digit))
                 .unwrap()
                 .parse()
@@ -644,6 +657,7 @@ impl<'t, 'f> TimeFormatter<'t, 'f> {
                 }
             }
 
+            // Parse spec
             let colons = cursor.read_while(|&x| x == b':');
 
             let spec = if colons.is_empty() {
@@ -717,7 +731,7 @@ impl<'t, 'f> TimeFormatter<'t, 'f> {
             };
 
             if let Some(spec) = spec {
-                Piece::new(width, padding, has_left_padding, case, spec).fmt(&mut f, self.time)?;
+                Piece::new(width, padding, flags, spec).fmt(&mut f, self.time)?;
             } else {
                 // No valid format spec found
                 let remaining_after = cursor.remaining();
@@ -865,6 +879,11 @@ mod tests {
         assert_eq!(format(&time3, "'%-^#10Z'").unwrap(), "'cet'");
         assert_eq!(format(&time4, "'%010Z'").unwrap(), "'00000+0000'");
         assert_eq!(format(&time5, "'%010Z'").unwrap(), "''");
+
+        assert_eq!(
+            format(&time, "'%^#26c'").unwrap(),
+            "' TUE JAN  2 13:18:19 -0094'"
+        );
 
         // TODO: other tests
 
