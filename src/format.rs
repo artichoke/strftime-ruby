@@ -285,6 +285,7 @@ impl Piece {
         let utc_offset = time.utc_offset();
         let utc_offset_abs = utc_offset.unsigned_abs();
 
+        // UTC is represented as "-00:00" if the '-' flag is set
         let sign = if utc_offset < 0 || time.is_utc() && self.flags.contains(Flags::LEFT_PADDING) {
             -1.0
         } else {
@@ -649,6 +650,11 @@ impl<'t, 'f> TimeFormatter<'t, 'f> {
         let mut flags = Flags::empty();
 
         loop {
+            // The left padding overrides the other padding options for most cases.
+            // It is also used for the hour sign in the %z specifier.
+            //
+            // Similary, the change case flag overrides the upper case flag, except
+            // when using combination specifiers (%c, %D, %x, %F, %v, %r, %R, %T, %X).
             match cursor.remaining().first() {
                 Some(&b'-') => {
                     padding = Padding::Left;
