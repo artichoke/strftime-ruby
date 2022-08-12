@@ -300,8 +300,17 @@ impl Piece {
         UtcOffset::new(hour, minute, second)
     }
 
+    fn hour_padding(&self, min_width: usize) -> usize {
+        const MIN_PADDING: usize = "+hh".len();
+
+        match self.width {
+            Some(width) => width.saturating_sub(min_width) + MIN_PADDING,
+            None => MIN_PADDING,
+        }
+    }
+
     fn write_offset_hh(&self, f: &mut SizeLimiter<'_>, utc_offset: &UtcOffset) -> io::Result<()> {
-        let n = self.width.unwrap_or(3).max(3);
+        let n = self.hour_padding("+hh".len());
 
         match self.padding {
             Padding::Spaces => write!(f, "{: >+n$.0}", utc_offset.hour),
@@ -310,7 +319,7 @@ impl Piece {
     }
 
     fn write_offset_hhmm(&self, f: &mut SizeLimiter<'_>, utc_offset: &UtcOffset) -> io::Result<()> {
-        let n = self.width.unwrap_or(5).saturating_sub(5) + 3;
+        let n = self.hour_padding("+hhmm".len());
 
         match self.padding {
             Padding::Spaces => write!(f, "{: >+n$.0}{:02}", utc_offset.hour, utc_offset.minute),
@@ -323,7 +332,7 @@ impl Piece {
         f: &mut SizeLimiter<'_>,
         utc_offset: &UtcOffset,
     ) -> io::Result<()> {
-        let n = self.width.unwrap_or(6).saturating_sub(6) + 3;
+        let n = self.hour_padding("+hh:mm".len());
 
         match self.padding {
             Padding::Spaces => write!(f, "{: >+n$.0}:{:02}", utc_offset.hour, utc_offset.minute),
@@ -336,7 +345,7 @@ impl Piece {
         f: &mut SizeLimiter<'_>,
         utc_offset: &UtcOffset,
     ) -> io::Result<()> {
-        let n = self.width.unwrap_or(9).saturating_sub(9) + 3;
+        let n = self.hour_padding("+hh:mm:ss".len());
 
         match self.padding {
             Padding::Spaces => write!(
@@ -353,12 +362,15 @@ impl Piece {
     }
 
     fn write_padding(&self, f: &mut SizeLimiter<'_>, min_width: usize) -> io::Result<()> {
-        let n = self.width.unwrap_or(min_width).saturating_sub(min_width);
+        if let Some(width) = self.width {
+            let n = width.saturating_sub(min_width);
 
-        match self.padding {
-            Padding::Zeros => write!(f, "{:0>n$}", ""),
-            _ => write!(f, "{: >n$}", ""),
+            match self.padding {
+                Padding::Zeros => write!(f, "{:0>n$}", "")?,
+                _ => write!(f, "{: >n$}", "")?,
+            };
         }
+        Ok(())
     }
 
     #[allow(clippy::too_many_lines)]
@@ -526,9 +538,12 @@ impl Piece {
             Spec::Tabulation => self.format_string(f, "\t"),
             Spec::Percent => self.format_string(f, "%"),
             Spec::CombinationDateTime => {
+                const MIN_WIDTH_NO_YEAR: usize = "www mmm dd HH:MM:SS ".len();
+
                 let year = time.year();
                 let default_year_width = if year < 0 { 5 } else { 4 };
-                self.write_padding(f, 20 + year_width(year).max(default_year_width))?;
+                let min_width = MIN_WIDTH_NO_YEAR + year_width(year).max(default_year_width);
+                self.write_padding(f, min_width)?;
 
                 let (day_names, month_names) = if self.flags.contains(Flags::UPPER_CASE) {
                     (&DAYS_UPPER, &MONTHS_UPPER)
@@ -548,7 +563,7 @@ impl Piece {
                 )
             }
             Spec::CombinationDate => {
-                self.write_padding(f, 8)?;
+                self.write_padding(f, "mm/dd/yy".len())?;
 
                 let year = time.year().rem_euclid(100);
                 let month = time.month();
@@ -557,9 +572,12 @@ impl Piece {
                 write!(f, "{:02}:{:02}:{:02}", month, day, year)
             }
             Spec::CombinationIso8601 => {
+                const MIN_WIDTH_NO_YEAR: usize = "-mm-dd".len();
+
                 let year = time.year();
                 let default_year_width = if year < 0 { 5 } else { 4 };
-                self.write_padding(f, 6 + year_width(year).max(default_year_width))?;
+                let min_width = MIN_WIDTH_NO_YEAR + year_width(year).max(default_year_width);
+                self.write_padding(f, min_width)?;
 
                 let month = time.month();
                 let day = time.day();
@@ -568,7 +586,7 @@ impl Piece {
             }
             Spec::CombinationVmsDate => {
                 let year = time.year();
-                self.write_padding(f, 7 + year_width(year).max(4))?;
+                self.write_padding(f, "dd-mmm-".len() + year_width(year).max(4))?;
 
                 let month_name = &MONTHS_UPPER[(time.month() - 1) as usize][..3];
                 let day = time.day();
@@ -576,7 +594,7 @@ impl Piece {
                 write!(f, "{: >2}-{}-{:04}", day, month_name, year)
             }
             Spec::CombinationTime12h => {
-                self.write_padding(f, 11)?;
+                self.write_padding(f, "HH:MM:SS PM".len())?;
 
                 let hour = time.hour() % 12;
                 let hour = if hour == 0 { 12 } else { hour };
@@ -587,11 +605,11 @@ impl Piece {
                 write!(f, "{:02}:{:02}:{:02} {}", hour, minute, second, meridian)
             }
             Spec::CombinationHourMinute24h => {
-                self.write_padding(f, 5)?;
+                self.write_padding(f, "HH:MM".len())?;
                 write!(f, "{:02}:{:02}", time.hour(), time.minute())
             }
             Spec::CombinationTime24h => {
-                self.write_padding(f, 8)?;
+                self.write_padding(f, "HH:MM:SS".len())?;
                 let (hour, minute, second) = (time.hour(), time.minute(), time.second());
                 write!(f, "{:02}:{:02}:{:02}", hour, minute, second)
             }
@@ -870,10 +888,15 @@ mod tests {
         let time2 = Time::new(-94, 1, 2, 13, 18, 19, 9876, time_zone_ref.into()).unwrap();
         let time3 = Time::new(2094, 1, 2, 13, 18, 19, 9876, time_zone_ref.into()).unwrap();
 
-        assert_eq!(format(&time0, "'%4z'").unwrap(), "'+0000'");
-        assert_eq!(format(&time1, "'%4z'").unwrap(), "'+0000'");
-        assert_eq!(format(&time2, "'%4z'").unwrap(), "'+0009'");
-        assert_eq!(format(&time3, "'%4z'").unwrap(), "'+0100'");
+        assert_eq!(format(&time0, "'%z'").unwrap(), "'+0000'");
+        assert_eq!(format(&time1, "'%z'").unwrap(), "'+0000'");
+        assert_eq!(format(&time2, "'%z'").unwrap(), "'+0009'");
+        assert_eq!(format(&time3, "'%z'").unwrap(), "'+0100'");
+
+        assert_eq!(format(&time0, "'%1z'").unwrap(), "'+0000'");
+        assert_eq!(format(&time1, "'%1z'").unwrap(), "'+0000'");
+        assert_eq!(format(&time2, "'%1z'").unwrap(), "'+0009'");
+        assert_eq!(format(&time3, "'%1z'").unwrap(), "'+0100'");
 
         assert_eq!(format(&time0, "'%-6z'").unwrap(), "'-00000'");
         assert_eq!(format(&time1, "'%-6z'").unwrap(), "'+00000'");
@@ -885,10 +908,15 @@ mod tests {
         assert_eq!(format(&time2, "'%_6z'").unwrap(), "'  +009'");
         assert_eq!(format(&time3, "'%_6z'").unwrap(), "'  +100'");
 
-        assert_eq!(format(&time0, "'%5:z'").unwrap(), "'+00:00'");
-        assert_eq!(format(&time1, "'%5:z'").unwrap(), "'+00:00'");
-        assert_eq!(format(&time2, "'%5:z'").unwrap(), "'+00:09'");
-        assert_eq!(format(&time3, "'%5:z'").unwrap(), "'+01:00'");
+        assert_eq!(format(&time0, "'%:z'").unwrap(), "'+00:00'");
+        assert_eq!(format(&time1, "'%:z'").unwrap(), "'+00:00'");
+        assert_eq!(format(&time2, "'%:z'").unwrap(), "'+00:09'");
+        assert_eq!(format(&time3, "'%:z'").unwrap(), "'+01:00'");
+
+        assert_eq!(format(&time0, "'%1:z'").unwrap(), "'+00:00'");
+        assert_eq!(format(&time1, "'%1:z'").unwrap(), "'+00:00'");
+        assert_eq!(format(&time2, "'%1:z'").unwrap(), "'+00:09'");
+        assert_eq!(format(&time3, "'%1:z'").unwrap(), "'+01:00'");
 
         assert_eq!(format(&time0, "'%-7:z'").unwrap(), "'-000:00'");
         assert_eq!(format(&time1, "'%-7:z'").unwrap(), "'+000:00'");
@@ -900,10 +928,15 @@ mod tests {
         assert_eq!(format(&time2, "'%_7:z'").unwrap(), "'  +0:09'");
         assert_eq!(format(&time3, "'%_7:z'").unwrap(), "'  +1:00'");
 
-        assert_eq!(format(&time0, "'%8::z'").unwrap(), "'+00:00:00'");
-        assert_eq!(format(&time1, "'%8::z'").unwrap(), "'+00:00:00'");
-        assert_eq!(format(&time2, "'%8::z'").unwrap(), "'+00:09:21'");
-        assert_eq!(format(&time3, "'%8::z'").unwrap(), "'+01:00:00'");
+        assert_eq!(format(&time0, "'%::z'").unwrap(), "'+00:00:00'");
+        assert_eq!(format(&time1, "'%::z'").unwrap(), "'+00:00:00'");
+        assert_eq!(format(&time2, "'%::z'").unwrap(), "'+00:09:21'");
+        assert_eq!(format(&time3, "'%::z'").unwrap(), "'+01:00:00'");
+
+        assert_eq!(format(&time0, "'%1::z'").unwrap(), "'+00:00:00'");
+        assert_eq!(format(&time1, "'%1::z'").unwrap(), "'+00:00:00'");
+        assert_eq!(format(&time2, "'%1::z'").unwrap(), "'+00:09:21'");
+        assert_eq!(format(&time3, "'%1::z'").unwrap(), "'+01:00:00'");
 
         assert_eq!(format(&time0, "'%-10::z'").unwrap(), "'-000:00:00'");
         assert_eq!(format(&time1, "'%-10::z'").unwrap(), "'+000:00:00'");
@@ -914,6 +947,11 @@ mod tests {
         assert_eq!(format(&time1, "'%_10::z'").unwrap(), "'  +0:00:00'");
         assert_eq!(format(&time2, "'%_10::z'").unwrap(), "'  +0:09:21'");
         assert_eq!(format(&time3, "'%_10::z'").unwrap(), "'  +1:00:00'");
+
+        assert_eq!(format(&time0, "'%1:::z'").unwrap(), "'+00'");
+        assert_eq!(format(&time1, "'%1:::z'").unwrap(), "'+00'");
+        assert_eq!(format(&time2, "'%1:::z'").unwrap(), "'+00:09:21'");
+        assert_eq!(format(&time3, "'%1:::z'").unwrap(), "'+01'");
 
         assert_eq!(format(&time0, "'%8:::z'").unwrap(), "'+0000000'");
         assert_eq!(format(&time1, "'%8:::z'").unwrap(), "'+0000000'");
