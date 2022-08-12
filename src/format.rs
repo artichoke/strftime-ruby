@@ -633,7 +633,7 @@ impl<'t, 'f> TimeFormatter<'t, 'f> {
 
     pub fn fmt(&self, buf: &mut dyn Write) -> Result<(), FormatError> {
         // Use a size limiter to avoid large writes
-        let size_limit = self.format.len().saturating_mul(1024 * 1024).max(1024);
+        let size_limit = self.format.len().saturating_mul(512 * 1024).max(1024);
         let mut f = SizeLimiter::new(buf, size_limit);
 
         let mut cursor = Cursor::new(self.format);
@@ -1006,9 +1006,12 @@ mod tests {
             "%100000000000000000000Y"
         );
 
-        assert!(matches!(
-            format(&time, "%100000000Y").unwrap_err(),
-            FormatError::IoError(err) if err.kind() == io::ErrorKind::WriteZero,
-        ));
+        let mut buf = Vec::new();
+        let result = TimeFormatter::new(&time, "%4718593Y").fmt(&mut buf);
+
+        assert_eq!(buf.len(), 4_718_592);
+
+        assert!(matches!(result.unwrap_err(),
+            FormatError::IoError(err) if err.kind() == io::ErrorKind::WriteZero));
     }
 }
