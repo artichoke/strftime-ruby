@@ -783,21 +783,13 @@ impl<'t, 'f> TimeFormatter<'t, 'f> {
 }
 
 fn year_width(year: i32) -> usize {
-    let mut n = 1;
+    let mut n = if year <= 0 { 1 } else { 0 };
     let mut val = year;
-    loop {
+    while val != 0 {
         val /= 10;
-        if val == 0 {
-            break;
-        }
         n += 1;
     }
-
-    if year < 0 {
-        n + 1
-    } else {
-        n
-    }
+    n
 }
 
 mod assert {
@@ -1013,5 +1005,20 @@ mod tests {
 
         assert!(matches!(result.unwrap_err(),
             FormatError::IoError(err) if err.kind() == io::ErrorKind::WriteZero));
+    }
+
+    #[test]
+    fn test_year_width() {
+        assert_eq!(year_width(-100), 4);
+        assert_eq!(year_width(-99), 3);
+        assert_eq!(year_width(-10), 3);
+        assert_eq!(year_width(-9), 2);
+        assert_eq!(year_width(-1), 2);
+        assert_eq!(year_width(0), 1);
+        assert_eq!(year_width(1), 1);
+        assert_eq!(year_width(9), 1);
+        assert_eq!(year_width(10), 2);
+        assert_eq!(year_width(99), 2);
+        assert_eq!(year_width(100), 3);
     }
 }
