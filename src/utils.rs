@@ -1,5 +1,6 @@
-use std::fmt::{self, Write};
-use std::io;
+use core::fmt;
+
+use crate::write::Write;
 
 /// A `Cursor` contains a slice of a buffer.
 #[derive(Debug, Clone)]
@@ -64,40 +65,6 @@ impl<'a> Cursor<'a> {
     }
 }
 
-/// A `SizeLimiter` limits the maximum amount a writer can write.
-pub struct SizeLimiter<'a> {
-    /// Inner writer
-    inner: &'a mut dyn io::Write,
-    /// Size limit
-    size_limit: usize,
-    /// Current write count
-    count: usize,
-}
-
-impl<'a> SizeLimiter<'a> {
-    /// Construct a new `SizeLimiter`
-    pub fn new(inner: &'a mut dyn io::Write, max_size: usize) -> Self {
-        Self {
-            inner,
-            size_limit: max_size,
-            count: 0,
-        }
-    }
-}
-
-impl<'a> io::Write for SizeLimiter<'a> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let write_limit = buf.len().min(self.size_limit - self.count);
-        let written = self.inner.write(&buf[..write_limit])?;
-        self.count += written;
-        Ok(written)
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        self.inner.flush()
-    }
-}
-
 /// Wrapper struct for converting an ASCII buffer to uppercase.
 #[derive(Debug)]
 pub struct Upper<'a>(&'a [u8]);
@@ -113,7 +80,7 @@ impl<'a> Upper<'a> {
 impl fmt::Display for Upper<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for &x in self.0 {
-            f.write_char(x.to_ascii_uppercase().into())?;
+            fmt::Write::write_char(f, x.to_ascii_uppercase().into())?;
         }
         Ok(())
     }
@@ -134,8 +101,38 @@ impl<'a> Lower<'a> {
 impl fmt::Display for Lower<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for &x in self.0 {
-            f.write_char(x.to_ascii_lowercase().into())?;
+            fmt::Write::write_char(f, x.to_ascii_lowercase().into())?;
         }
         Ok(())
+    }
+}
+
+/// A `SizeLimiter` limits the maximum amount a writer can write.
+pub struct SizeLimiter<'a> {
+    /// Inner writer
+    inner: &'a mut dyn Write,
+    /// Size limit
+    size_limit: usize,
+    /// Current write count
+    count: usize,
+}
+
+impl<'a> SizeLimiter<'a> {
+    /// Construct a new `SizeLimiter`
+    pub fn new(inner: &'a mut dyn Write, max_size: usize) -> Self {
+        Self {
+            inner,
+            size_limit: max_size,
+            count: 0,
+        }
+    }
+}
+
+impl<'a> Write for SizeLimiter<'a> {
+    fn write(&mut self, buf: &[u8]) -> usize {
+        let write_limit = buf.len().min(self.size_limit - self.count);
+        let written = self.inner.write(&buf[..write_limit]);
+        self.count += written;
+        written
     }
 }

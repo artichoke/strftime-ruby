@@ -1,14 +1,15 @@
-use std::fmt;
-use std::io::{self, Write};
-use std::num::IntErrorKind;
-use std::str;
+use core::fmt;
+use core::num::IntErrorKind;
+use core::str;
 
 use bitflags::bitflags;
 use spinoso_time::tzrs::Time;
 
 use crate::utils::{Cursor, Lower, SizeLimiter, Upper};
 use crate::week::{iso_8601_year_and_week_number, week_number, WeekStart};
-use crate::FormatError;
+use crate::write::Write;
+use crate::Error;
+
 use assert::{assert_is_ascii_uppercase, assert_sorted, assert_sorted_spec};
 
 const DAYS: [&str; 7] = [
@@ -221,7 +222,7 @@ impl Piece {
         f: &mut SizeLimiter<'_>,
         value: impl fmt::Display,
         default_width: usize,
-    ) -> io::Result<()> {
+    ) -> Result<(), Error> {
         if self.flags.contains(Flags::LEFT_PADDING) {
             write!(f, "{}", value)
         } else if self.padding == Padding::Spaces {
@@ -238,7 +239,7 @@ impl Piece {
         f: &mut SizeLimiter<'_>,
         value: impl fmt::Display,
         default_width: usize,
-    ) -> io::Result<()> {
+    ) -> Result<(), Error> {
         if self.flags.contains(Flags::LEFT_PADDING) {
             write!(f, "{}", value)
         } else if self.padding == Padding::Zeros {
@@ -255,7 +256,7 @@ impl Piece {
         f: &mut SizeLimiter<'_>,
         nanoseconds: u32,
         default_width: usize,
-    ) -> io::Result<()> {
+    ) -> Result<(), Error> {
         let width = self.width.unwrap_or(default_width);
 
         if width <= 9 {
@@ -266,7 +267,7 @@ impl Piece {
         }
     }
 
-    fn format_string(&self, f: &mut SizeLimiter<'_>, s: impl fmt::Display) -> io::Result<()> {
+    fn format_string(&self, f: &mut SizeLimiter<'_>, s: impl fmt::Display) -> Result<(), Error> {
         match self.width {
             None => write!(f, "{}", s),
             Some(width) => {
@@ -309,7 +310,11 @@ impl Piece {
         }
     }
 
-    fn write_offset_hh(&self, f: &mut SizeLimiter<'_>, utc_offset: &UtcOffset) -> io::Result<()> {
+    fn write_offset_hh(
+        &self,
+        f: &mut SizeLimiter<'_>,
+        utc_offset: &UtcOffset,
+    ) -> Result<(), Error> {
         let n = self.hour_padding("+hh".len());
 
         match self.padding {
@@ -318,7 +323,11 @@ impl Piece {
         }
     }
 
-    fn write_offset_hhmm(&self, f: &mut SizeLimiter<'_>, utc_offset: &UtcOffset) -> io::Result<()> {
+    fn write_offset_hhmm(
+        &self,
+        f: &mut SizeLimiter<'_>,
+        utc_offset: &UtcOffset,
+    ) -> Result<(), Error> {
         let n = self.hour_padding("+hhmm".len());
 
         match self.padding {
@@ -331,7 +340,7 @@ impl Piece {
         &self,
         f: &mut SizeLimiter<'_>,
         utc_offset: &UtcOffset,
-    ) -> io::Result<()> {
+    ) -> Result<(), Error> {
         let n = self.hour_padding("+hh:mm".len());
 
         match self.padding {
@@ -344,7 +353,7 @@ impl Piece {
         &self,
         f: &mut SizeLimiter<'_>,
         utc_offset: &UtcOffset,
-    ) -> io::Result<()> {
+    ) -> Result<(), Error> {
         let n = self.hour_padding("+hh:mm:ss".len());
 
         match self.padding {
@@ -361,7 +370,7 @@ impl Piece {
         }
     }
 
-    fn write_padding(&self, f: &mut SizeLimiter<'_>, min_width: usize) -> io::Result<()> {
+    fn write_padding(&self, f: &mut SizeLimiter<'_>, min_width: usize) -> Result<(), Error> {
         if let Some(width) = self.width {
             let n = width.saturating_sub(min_width);
 
@@ -374,7 +383,7 @@ impl Piece {
     }
 
     #[allow(clippy::too_many_lines)]
-    fn fmt(&self, f: &mut SizeLimiter<'_>, time: &Time) -> io::Result<()> {
+    fn fmt(&self, f: &mut SizeLimiter<'_>, time: &Time) -> Result<(), Error> {
         match self.spec {
             Spec::Year4Digits => {
                 let year = time.year();
@@ -631,7 +640,7 @@ impl<'t, 'f> TimeFormatter<'t, 'f> {
         }
     }
 
-    pub fn fmt(&self, buf: &mut dyn Write) -> Result<(), FormatError> {
+    pub fn fmt(&self, buf: &mut dyn Write) -> Result<(), Error> {
         // Use a size limiter to avoid large writes
         let size_limit = self.format.len().saturating_mul(512 * 1024).max(1024);
         let mut f = SizeLimiter::new(buf, size_limit);
@@ -662,7 +671,7 @@ impl<'t, 'f> TimeFormatter<'t, 'f> {
         Ok(())
     }
 
-    fn parse_spec(cursor: &mut Cursor<'_>) -> Result<Option<Piece>, FormatError> {
+    fn parse_spec(cursor: &mut Cursor<'_>) -> Result<Option<Piece>, Error> {
         // Parse flags
         let mut padding = Padding::default();
         let mut flags = Flags::empty();
@@ -765,7 +774,7 @@ impl<'t, 'f> TimeFormatter<'t, 'f> {
                     Ok(index) => Some(POSSIBLE_SPECS[index].1),
                     Err(_) => None,
                 },
-                None => return Err(FormatError::InvalidFormat),
+                None => return Err(Error::InvalidFormat),
             }
         } else if cursor.read_optional_tag(b"z") {
             match colons.len() {
@@ -811,7 +820,7 @@ mod assert {
     }
 
     pub(super) const fn assert_sorted(s: &[u8]) -> &[u8] {
-        assert_sorted_by_key!(s, std::convert::identity)
+        assert_sorted_by_key!(s, core::convert::identity)
     }
 
     pub(super) const fn assert_sorted_spec(s: &[(u8, Spec)]) -> &[(u8, Spec)] {
@@ -841,13 +850,14 @@ mod assert {
 }
 
 #[cfg(test)]
+#[cfg(feature = "alloc")]
 mod tests {
     use super::*;
 
     use spinoso_time::tzrs::Offset;
     use tz::TimeZoneRef;
 
-    fn format(time: &Time, format: &str) -> Result<String, FormatError> {
+    fn format(time: &Time, format: &str) -> Result<String, Error> {
         let mut buf = Vec::new();
         TimeFormatter::new(time, format).fmt(&mut buf)?;
         Ok(String::from_utf8(buf).unwrap())
@@ -1002,9 +1012,7 @@ mod tests {
         let result = TimeFormatter::new(&time, "%4718593Y").fmt(&mut buf);
 
         assert_eq!(buf.len(), 4_718_592);
-
-        assert!(matches!(result.unwrap_err(),
-            FormatError::IoError(err) if err.kind() == io::ErrorKind::WriteZero));
+        assert!(matches!(result.unwrap_err(), Error::WriteZero));
     }
 
     #[test]

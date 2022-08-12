@@ -1,3 +1,4 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 #![warn(clippy::cargo)]
@@ -30,27 +31,47 @@ mod readme {}
 mod format;
 mod utils;
 mod week;
+mod write;
 
 use format::TimeFormatter;
 
-use std::io;
-
 use spinoso_time::tzrs::Time;
 
-#[derive(Debug)]
-pub enum FormatError {
-    IoError(io::Error),
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum Error {
     InvalidFormat,
+    WriteZero,
+    FmtError,
 }
 
-impl From<io::Error> for FormatError {
-    fn from(err: io::Error) -> Self {
-        Self::IoError(err)
+pub mod buffered {
+    use super::{Error, Time, TimeFormatter};
+
+    pub fn strftime(time: &Time, format: &[u8], mut buf: &mut [u8]) -> Result<(), Error> {
+        TimeFormatter::new(time, format).fmt(&mut buf)
     }
 }
 
-pub fn strftime(time: &Time, format: &str) -> Result<Vec<u8>, FormatError> {
-    let mut buf = Vec::new();
-    TimeFormatter::new(time, format).fmt(&mut buf)?;
-    Ok(buf)
+#[cfg(feature = "alloc")]
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+pub mod bytes {
+    use super::{Error, Time, TimeFormatter};
+
+    pub fn strftime(time: &Time, format: &[u8]) -> Result<Vec<u8>, Error> {
+        let mut buf = Vec::new();
+        TimeFormatter::new(time, format).fmt(&mut buf)?;
+        Ok(buf)
+    }
+}
+
+#[cfg(feature = "alloc")]
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+pub mod string {
+    use super::{Error, Time, TimeFormatter};
+
+    pub fn strftime(time: &Time, format: &str) -> Result<String, Error> {
+        let mut buf = Vec::new();
+        TimeFormatter::new(time, format).fmt(&mut buf)?;
+        Ok(String::from_utf8(buf).expect("resulting string should be valid UTF-8"))
+    }
 }
