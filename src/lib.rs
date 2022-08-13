@@ -28,6 +28,7 @@
 #[doc = include_str!("../README.md")]
 mod readme {}
 
+mod assert;
 mod format;
 mod utils;
 mod week;

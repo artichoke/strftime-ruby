@@ -5,12 +5,11 @@ use core::str;
 use bitflags::bitflags;
 use spinoso_time::tzrs::Time;
 
+use crate::assert::{assert_is_ascii_uppercase, assert_sorted, assert_sorted_elem_0};
 use crate::utils::{Cursor, Lower, SizeLimiter, Upper};
 use crate::week::{iso_8601_year_and_week_number, week_number, WeekStart};
 use crate::write::Write;
 use crate::Error;
-
-use assert::{assert_is_ascii_uppercase, assert_sorted, assert_sorted_spec};
 
 const DAYS: [&str; 7] = [
     "Sunday",
@@ -62,6 +61,7 @@ const MONTHS_UPPER: [&str; 12] = [
     "DECEMBER",
 ];
 
+// Check day and month tables
 const _: () = {
     assert_is_ascii_uppercase(&DAYS, &DAYS_UPPER);
     assert_is_ascii_uppercase(&MONTHS, &MONTHS_UPPER);
@@ -722,7 +722,7 @@ impl<'t, 'f> TimeFormatter<'t, 'f> {
         let colons = cursor.read_while(|&x| x == b':');
 
         let spec = if colons.is_empty() {
-            const POSSIBLE_SPECS: &[(u8, Spec)] = assert_sorted_spec(&[
+            const POSSIBLE_SPECS: &[(u8, Spec)] = assert_sorted_elem_0(&[
                 (b'%', Spec::Percent),
                 (b'A', Spec::WeekDayName),
                 (b'B', Spec::MonthName),
@@ -799,54 +799,6 @@ fn year_width(year: i32) -> usize {
         n += 1;
     }
     n
-}
-
-mod assert {
-    use super::Spec;
-
-    macro_rules! assert_sorted_by_key {
-        ($s:expr, $f:expr) => {{
-            let mut i = 0;
-            while i + 1 < $s.len() {
-                assert!($f($s[i]) < $f($s[i + 1]));
-                i += 1;
-            }
-            $s
-        }};
-    }
-
-    const fn to_spec_char((c, _): (u8, Spec)) -> u8 {
-        c
-    }
-
-    pub(super) const fn assert_sorted(s: &[u8]) -> &[u8] {
-        assert_sorted_by_key!(s, core::convert::identity)
-    }
-
-    pub(super) const fn assert_sorted_spec(s: &[(u8, Spec)]) -> &[(u8, Spec)] {
-        assert_sorted_by_key!(s, to_spec_char)
-    }
-
-    #[allow(dead_code)]
-    pub(super) const fn assert_is_ascii_uppercase(table: &[&str], upper_table: &[&str]) {
-        assert!(table.len() == upper_table.len());
-
-        let mut index = 0;
-        while index < table.len() {
-            let (s, upper_s) = (table[index].as_bytes(), upper_table[index].as_bytes());
-            assert!(s.len() == upper_s.len());
-
-            let mut i = 0;
-            while i < s.len() {
-                assert!(s[i].is_ascii());
-                assert!(upper_s[i].is_ascii());
-                assert!(upper_s[i] == s[i].to_ascii_uppercase());
-                i += 1;
-            }
-
-            index += 1;
-        }
-    }
 }
 
 #[cfg(test)]
