@@ -26,12 +26,8 @@ alloc = []
 
 [dependencies]
 bitflags = "1.3"
-spinoso-time = { git = "https://github.com/artichoke/artichoke" }
 
 [dev-dependencies]
-tzdb = "0.4"
-tz-rs = "0.6.12"
-
 # Property testing for interner getters and setters.
 quickcheck = { version = "1.0.3", default-features = false }
 quickcheck_macros = "1.0.0"

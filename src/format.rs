@@ -3,13 +3,12 @@ use core::num::IntErrorKind;
 use core::str;
 
 use bitflags::bitflags;
-use spinoso_time::tzrs::Time;
 
 use crate::assert::{assert_is_ascii_uppercase, assert_sorted, assert_sorted_elem_0};
 use crate::utils::{Cursor, Lower, SizeLimiter, Upper};
 use crate::week::{iso_8601_year_and_week_number, week_number, WeekStart};
 use crate::write::Write;
-use crate::Error;
+use crate::{Error, Time};
 
 const DAYS: [&str; 7] = [
     "Sunday",
@@ -282,7 +281,7 @@ impl Piece {
         }
     }
 
-    fn compute_offset_parts(&self, time: &Time) -> UtcOffset {
+    fn compute_offset_parts(&self, time: &impl Time) -> UtcOffset {
         let utc_offset = time.utc_offset();
         let utc_offset_abs = utc_offset.unsigned_abs();
 
@@ -383,7 +382,7 @@ impl Piece {
     }
 
     #[allow(clippy::too_many_lines)]
-    fn fmt(&self, f: &mut SizeLimiter<'_>, time: &Time) -> Result<(), Error> {
+    fn fmt(&self, f: &mut SizeLimiter<'_>, time: &impl Time) -> Result<(), Error> {
         match self.spec {
             Spec::Year4Digits => {
                 let year = time.year();
@@ -626,14 +625,13 @@ impl Piece {
     }
 }
 
-#[derive(Debug)]
-pub(crate) struct TimeFormatter<'t, 'f> {
-    time: &'t Time,
+pub(crate) struct TimeFormatter<'t, 'f, T> {
+    time: &'t T,
     format: &'f [u8],
 }
 
-impl<'t, 'f> TimeFormatter<'t, 'f> {
-    pub(crate) fn new<T: AsRef<[u8]> + ?Sized>(time: &'t Time, format: &'f T) -> Self {
+impl<'t, 'f, T: Time> TimeFormatter<'t, 'f, T> {
+    pub(crate) fn new<F: AsRef<[u8]> + ?Sized>(time: &'t T, format: &'f F) -> Self {
         Self {
             time,
             format: format.as_ref(),
@@ -802,142 +800,173 @@ fn year_width(year: i32) -> usize {
 }
 
 #[cfg(test)]
-#[cfg(feature = "alloc")]
 mod tests {
     use super::*;
 
-    use spinoso_time::tzrs::Offset;
-    use tz::TimeZoneRef;
+    macro_rules! create_time {
+        ($($field_name:ident: $field_type:ty),*,) => {
+            struct Time<'a> {
+                $($field_name: $field_type),*,
+            }
 
-    fn format(time: &Time, format: &str) -> Result<String, Error> {
-        let mut buf = Vec::new();
-        TimeFormatter::new(time, format).fmt(&mut buf)?;
-        Ok(String::from_utf8(buf).unwrap())
+            impl<'a> Time<'a> {
+                #[allow(clippy::too_many_arguments)]
+                fn new($($field_name: $field_type),*) -> Self {
+                    Self { $($field_name),* }
+                }
+            }
+
+            impl<'a> crate::Time for Time<'a> {
+                $(fn $field_name(&self) -> $field_type { self.$field_name })*
+            }
+        };
+    }
+
+    create_time!(
+        year: i32,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+        nanoseconds: u32,
+        day_of_week: u8,
+        day_of_year: u16,
+        to_int: i64,
+        is_utc: bool,
+        utc_offset: i32,
+        time_zone: &'a str,
+    );
+
+    fn check_format(time: &Time<'_>, format: &str, expected: Result<&str, Error>) {
+        const SIZE: usize = 100;
+        let mut buf = [0u8; SIZE];
+        let mut cursor = &mut buf[..];
+
+        let result = TimeFormatter::new(time, format).fmt(&mut cursor);
+        let written = SIZE - cursor.len();
+        let data = str::from_utf8(&buf[..written]).unwrap();
+
+        assert_eq!(result.map(|_| data), expected);
     }
 
     #[test]
     fn test_format() {
-        let utc = tzdb::time_zone::UTC;
-        let time_zone_ref = tzdb::tz_by_name("Europe/Paris").unwrap();
+        #[rustfmt::skip]
+        let times = [
+            Time::new(1, 1, 1, 1, 1, 1, 1, 1, 1, -62_135_593_139, true, 0, "UTC"),
+            Time::new(1, 1, 1, 1, 1, 1, 1, 1, 1, -62_135_593_139, false, 0, "UTC"),
+            Time::new(1, 1, 1, 1, 1, 1, 1, 1, 1, -62_135_593_139, false, 0, "+0000"),
+            Time::new(1, 1, 1, 1, 1, 1, 1, 1, 1, -62_135_593_139, false, 0, ""),
+            Time::new(-94, 1, 2, 13, 18, 19, 9876, 2, 2, -65_133_456_662, false, 561, "LMT"),
+            Time::new(2094, 1, 2, 13, 18, 19, 9876, 6, 2, 3_913_273_099, false, 3600, "CET"),
+        ];
 
-        let time = Time::new(-94, 1, 2, 13, 18, 19, 9876, time_zone_ref.into()).unwrap();
+        check_format(&times[4], "%", Err(Error::InvalidFormat));
+        check_format(&times[4], "%-4", Err(Error::InvalidFormat));
+        check_format(&times[4], "%-", Err(Error::InvalidFormat));
+        check_format(&times[4], "%-_", Err(Error::InvalidFormat));
 
-        assert!(format(&time, "%").is_err());
-        assert!(format(&time, "%-4").is_err());
-        assert!(format(&time, "%-").is_err());
-        assert!(format(&time, "%-_").is_err());
+        check_format(&times[4], "% ", Ok("% "));
+        check_format(&times[4], "%-4 ", Ok("%-4 "));
+        check_format(&times[4], "%- ", Ok("%- "));
+        check_format(&times[4], "%-_ ", Ok("%-_ "));
 
-        assert_eq!(format(&time, "% ").unwrap(), "% ");
-        assert_eq!(format(&time, "%-4 ").unwrap(), "%-4 ");
-        assert_eq!(format(&time, "%- ").unwrap(), "%- ");
-        assert_eq!(format(&time, "%-_ ").unwrap(), "%-_ ");
+        check_format(&times[4], "'%4Y'", Ok("'-094'"));
+        check_format(&times[4], "'%_Y'", Ok("'  -94'"));
+        check_format(&times[4], "'%y'", Ok("'06'"));
+        check_format(&times[4], "'%C'", Ok("'-1'"));
 
-        assert_eq!(format(&time, "'%4Y'").unwrap(), "'-094'");
-        assert_eq!(format(&time, "'%_Y'").unwrap(), "'  -94'");
-        assert_eq!(format(&time, "'%y'").unwrap(), "'06'");
-        assert_eq!(format(&time, "'%C'").unwrap(), "'-1'");
+        check_format(&times[0], "'%z'", Ok("'+0000'"));
+        check_format(&times[1], "'%z'", Ok("'+0000'"));
+        check_format(&times[4], "'%z'", Ok("'+0009'"));
+        check_format(&times[5], "'%z'", Ok("'+0100'"));
 
-        let time0 = Time::new(1, 1, 1, 1, 1, 1, 1, Offset::utc()).unwrap();
-        let time1 = Time::new(1, 1, 1, 1, 1, 1, 1, utc.into()).unwrap();
-        let time2 = Time::new(-94, 1, 2, 13, 18, 19, 9876, time_zone_ref.into()).unwrap();
-        let time3 = Time::new(2094, 1, 2, 13, 18, 19, 9876, time_zone_ref.into()).unwrap();
+        check_format(&times[0], "'%1z'", Ok("'+0000'"));
+        check_format(&times[1], "'%1z'", Ok("'+0000'"));
+        check_format(&times[4], "'%1z'", Ok("'+0009'"));
+        check_format(&times[5], "'%1z'", Ok("'+0100'"));
 
-        assert_eq!(format(&time0, "'%z'").unwrap(), "'+0000'");
-        assert_eq!(format(&time1, "'%z'").unwrap(), "'+0000'");
-        assert_eq!(format(&time2, "'%z'").unwrap(), "'+0009'");
-        assert_eq!(format(&time3, "'%z'").unwrap(), "'+0100'");
+        check_format(&times[0], "'%-6z'", Ok("'-00000'"));
+        check_format(&times[1], "'%-6z'", Ok("'+00000'"));
+        check_format(&times[4], "'%-6z'", Ok("'+00009'"));
+        check_format(&times[5], "'%-6z'", Ok("'+00100'"));
 
-        assert_eq!(format(&time0, "'%1z'").unwrap(), "'+0000'");
-        assert_eq!(format(&time1, "'%1z'").unwrap(), "'+0000'");
-        assert_eq!(format(&time2, "'%1z'").unwrap(), "'+0009'");
-        assert_eq!(format(&time3, "'%1z'").unwrap(), "'+0100'");
+        check_format(&times[0], "'%_6z'", Ok("'  +000'"));
+        check_format(&times[1], "'%_6z'", Ok("'  +000'"));
+        check_format(&times[4], "'%_6z'", Ok("'  +009'"));
+        check_format(&times[5], "'%_6z'", Ok("'  +100'"));
 
-        assert_eq!(format(&time0, "'%-6z'").unwrap(), "'-00000'");
-        assert_eq!(format(&time1, "'%-6z'").unwrap(), "'+00000'");
-        assert_eq!(format(&time2, "'%-6z'").unwrap(), "'+00009'");
-        assert_eq!(format(&time3, "'%-6z'").unwrap(), "'+00100'");
+        check_format(&times[0], "'%:z'", Ok("'+00:00'"));
+        check_format(&times[1], "'%:z'", Ok("'+00:00'"));
+        check_format(&times[4], "'%:z'", Ok("'+00:09'"));
+        check_format(&times[5], "'%:z'", Ok("'+01:00'"));
 
-        assert_eq!(format(&time0, "'%_6z'").unwrap(), "'  +000'");
-        assert_eq!(format(&time1, "'%_6z'").unwrap(), "'  +000'");
-        assert_eq!(format(&time2, "'%_6z'").unwrap(), "'  +009'");
-        assert_eq!(format(&time3, "'%_6z'").unwrap(), "'  +100'");
+        check_format(&times[0], "'%1:z'", Ok("'+00:00'"));
+        check_format(&times[1], "'%1:z'", Ok("'+00:00'"));
+        check_format(&times[4], "'%1:z'", Ok("'+00:09'"));
+        check_format(&times[5], "'%1:z'", Ok("'+01:00'"));
 
-        assert_eq!(format(&time0, "'%:z'").unwrap(), "'+00:00'");
-        assert_eq!(format(&time1, "'%:z'").unwrap(), "'+00:00'");
-        assert_eq!(format(&time2, "'%:z'").unwrap(), "'+00:09'");
-        assert_eq!(format(&time3, "'%:z'").unwrap(), "'+01:00'");
+        check_format(&times[0], "'%-7:z'", Ok("'-000:00'"));
+        check_format(&times[1], "'%-7:z'", Ok("'+000:00'"));
+        check_format(&times[4], "'%-7:z'", Ok("'+000:09'"));
+        check_format(&times[5], "'%-7:z'", Ok("'+001:00'"));
 
-        assert_eq!(format(&time0, "'%1:z'").unwrap(), "'+00:00'");
-        assert_eq!(format(&time1, "'%1:z'").unwrap(), "'+00:00'");
-        assert_eq!(format(&time2, "'%1:z'").unwrap(), "'+00:09'");
-        assert_eq!(format(&time3, "'%1:z'").unwrap(), "'+01:00'");
+        check_format(&times[0], "'%_7:z'", Ok("'  +0:00'"));
+        check_format(&times[1], "'%_7:z'", Ok("'  +0:00'"));
+        check_format(&times[4], "'%_7:z'", Ok("'  +0:09'"));
+        check_format(&times[5], "'%_7:z'", Ok("'  +1:00'"));
 
-        assert_eq!(format(&time0, "'%-7:z'").unwrap(), "'-000:00'");
-        assert_eq!(format(&time1, "'%-7:z'").unwrap(), "'+000:00'");
-        assert_eq!(format(&time2, "'%-7:z'").unwrap(), "'+000:09'");
-        assert_eq!(format(&time3, "'%-7:z'").unwrap(), "'+001:00'");
+        check_format(&times[0], "'%::z'", Ok("'+00:00:00'"));
+        check_format(&times[1], "'%::z'", Ok("'+00:00:00'"));
+        check_format(&times[4], "'%::z'", Ok("'+00:09:21'"));
+        check_format(&times[5], "'%::z'", Ok("'+01:00:00'"));
 
-        assert_eq!(format(&time0, "'%_7:z'").unwrap(), "'  +0:00'");
-        assert_eq!(format(&time1, "'%_7:z'").unwrap(), "'  +0:00'");
-        assert_eq!(format(&time2, "'%_7:z'").unwrap(), "'  +0:09'");
-        assert_eq!(format(&time3, "'%_7:z'").unwrap(), "'  +1:00'");
+        check_format(&times[0], "'%1::z'", Ok("'+00:00:00'"));
+        check_format(&times[1], "'%1::z'", Ok("'+00:00:00'"));
+        check_format(&times[4], "'%1::z'", Ok("'+00:09:21'"));
+        check_format(&times[5], "'%1::z'", Ok("'+01:00:00'"));
 
-        assert_eq!(format(&time0, "'%::z'").unwrap(), "'+00:00:00'");
-        assert_eq!(format(&time1, "'%::z'").unwrap(), "'+00:00:00'");
-        assert_eq!(format(&time2, "'%::z'").unwrap(), "'+00:09:21'");
-        assert_eq!(format(&time3, "'%::z'").unwrap(), "'+01:00:00'");
+        check_format(&times[0], "'%-10::z'", Ok("'-000:00:00'"));
+        check_format(&times[1], "'%-10::z'", Ok("'+000:00:00'"));
+        check_format(&times[4], "'%-10::z'", Ok("'+000:09:21'"));
+        check_format(&times[5], "'%-10::z'", Ok("'+001:00:00'"));
 
-        assert_eq!(format(&time0, "'%1::z'").unwrap(), "'+00:00:00'");
-        assert_eq!(format(&time1, "'%1::z'").unwrap(), "'+00:00:00'");
-        assert_eq!(format(&time2, "'%1::z'").unwrap(), "'+00:09:21'");
-        assert_eq!(format(&time3, "'%1::z'").unwrap(), "'+01:00:00'");
+        check_format(&times[0], "'%_10::z'", Ok("'  +0:00:00'"));
+        check_format(&times[1], "'%_10::z'", Ok("'  +0:00:00'"));
+        check_format(&times[4], "'%_10::z'", Ok("'  +0:09:21'"));
+        check_format(&times[5], "'%_10::z'", Ok("'  +1:00:00'"));
 
-        assert_eq!(format(&time0, "'%-10::z'").unwrap(), "'-000:00:00'");
-        assert_eq!(format(&time1, "'%-10::z'").unwrap(), "'+000:00:00'");
-        assert_eq!(format(&time2, "'%-10::z'").unwrap(), "'+000:09:21'");
-        assert_eq!(format(&time3, "'%-10::z'").unwrap(), "'+001:00:00'");
+        check_format(&times[0], "'%1:::z'", Ok("'+00'"));
+        check_format(&times[1], "'%1:::z'", Ok("'+00'"));
+        check_format(&times[4], "'%1:::z'", Ok("'+00:09:21'"));
+        check_format(&times[5], "'%1:::z'", Ok("'+01'"));
 
-        assert_eq!(format(&time0, "'%_10::z'").unwrap(), "'  +0:00:00'");
-        assert_eq!(format(&time1, "'%_10::z'").unwrap(), "'  +0:00:00'");
-        assert_eq!(format(&time2, "'%_10::z'").unwrap(), "'  +0:09:21'");
-        assert_eq!(format(&time3, "'%_10::z'").unwrap(), "'  +1:00:00'");
+        check_format(&times[0], "'%8:::z'", Ok("'+0000000'"));
+        check_format(&times[1], "'%8:::z'", Ok("'+0000000'"));
+        check_format(&times[4], "'%8:::z'", Ok("'+00:09:21'"));
+        check_format(&times[5], "'%8:::z'", Ok("'+0000001'"));
 
-        assert_eq!(format(&time0, "'%1:::z'").unwrap(), "'+00'");
-        assert_eq!(format(&time1, "'%1:::z'").unwrap(), "'+00'");
-        assert_eq!(format(&time2, "'%1:::z'").unwrap(), "'+00:09:21'");
-        assert_eq!(format(&time3, "'%1:::z'").unwrap(), "'+01'");
+        check_format(&times[0], "'%-10:::z'", Ok("'-000000000'"));
+        check_format(&times[1], "'%-10:::z'", Ok("'+000000000'"));
+        check_format(&times[4], "'%-10:::z'", Ok("'+000:09:21'"));
+        check_format(&times[5], "'%-10:::z'", Ok("'+000000001'"));
 
-        assert_eq!(format(&time0, "'%8:::z'").unwrap(), "'+0000000'");
-        assert_eq!(format(&time1, "'%8:::z'").unwrap(), "'+0000000'");
-        assert_eq!(format(&time2, "'%8:::z'").unwrap(), "'+00:09:21'");
-        assert_eq!(format(&time3, "'%8:::z'").unwrap(), "'+0000001'");
+        check_format(&times[0], "'%-_10:::z'", Ok("'        -0'"));
+        check_format(&times[1], "'%-_10:::z'", Ok("'        +0'"));
+        check_format(&times[4], "'%-_10:::z'", Ok("'  +0:09:21'"));
+        check_format(&times[5], "'%-_10:::z'", Ok("'        +1'"));
 
-        assert_eq!(format(&time0, "'%-10:::z'").unwrap(), "'-000000000'");
-        assert_eq!(format(&time1, "'%-10:::z'").unwrap(), "'+000000000'");
-        assert_eq!(format(&time2, "'%-10:::z'").unwrap(), "'+000:09:21'");
-        assert_eq!(format(&time3, "'%-10:::z'").unwrap(), "'+000000001'");
+        check_format(&times[4], "'%-_10::::z'", Ok("'%-_10::::z'"));
 
-        assert_eq!(format(&time0, "'%-_10:::z'").unwrap(), "'        -0'");
-        assert_eq!(format(&time1, "'%-_10:::z'").unwrap(), "'        +0'");
-        assert_eq!(format(&time2, "'%-_10:::z'").unwrap(), "'  +0:09:21'");
-        assert_eq!(format(&time3, "'%-_10:::z'").unwrap(), "'        +1'");
+        check_format(&times[0], "'%10Z'", Ok("'       UTC'"));
+        check_format(&times[1], "'%10Z'", Ok("'       UTC'"));
+        check_format(&times[4], "'%10Z'", Ok("'       LMT'"));
+        check_format(&times[5], "'%-^#10Z'", Ok("'cet'"));
+        check_format(&times[2], "'%010Z'", Ok("'00000+0000'"));
+        check_format(&times[3], "'%010Z'", Ok("''"));
 
-        assert_eq!(format(&time, "'%-_10::::z'").unwrap(), "'%-_10::::z'");
-
-        let time4 = Time::new(1, 1, 1, 1, 1, 1, 1, Offset::fixed(0).unwrap()).unwrap();
-        let time5 = Time::new(1, 1, 1, 1, 1, 1, 1, TimeZoneRef::utc().into()).unwrap();
-
-        assert_eq!(format(&time0, "'%10Z'").unwrap(), "'       UTC'");
-        assert_eq!(format(&time1, "'%10Z'").unwrap(), "'       UTC'");
-        assert_eq!(format(&time2, "'%10Z'").unwrap(), "'       LMT'");
-        assert_eq!(format(&time3, "'%-^#10Z'").unwrap(), "'cet'");
-        assert_eq!(format(&time4, "'%010Z'").unwrap(), "'00000+0000'");
-        assert_eq!(format(&time5, "'%010Z'").unwrap(), "''");
-
-        assert_eq!(
-            format(&time, "'%^#26c'").unwrap(),
-            "' TUE JAN  2 13:18:19 -0094'"
-        );
+        check_format(&times[4], "'%^#26c'", Ok("' TUE JAN  2 13:18:19 -0094'"));
 
         // TODO: other tests
 
@@ -950,21 +979,33 @@ mod tests {
 
     #[test]
     fn test_format_large_width() {
-        let time_zone_ref = tzdb::tz_by_name("Europe/Paris").unwrap();
-        let time = Time::new(1, 1, 1, 1, 1, 1, 1, time_zone_ref.into()).unwrap();
+        let time = Time::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, "");
 
-        assert_eq!(format(&time, "%-100000000Y").unwrap(), "1");
+        check_format(&time, "%-100000000m", Ok("1"));
 
-        assert_eq!(
-            format(&time, "%100000000000000000000Y").unwrap(),
-            "%100000000000000000000Y"
+        check_format(
+            &time,
+            "%100000000000000000000m",
+            Ok("%100000000000000000000m"),
         );
 
-        let mut buf = Vec::new();
-        let result = TimeFormatter::new(&time, "%4718593Y").fmt(&mut buf);
+        #[cfg(feature = "alloc")]
+        {
+            let mut buf = Vec::new();
+            let result = TimeFormatter::new(&time, "%4718593m").fmt(&mut buf);
 
-        assert_eq!(buf.len(), 4_718_592);
-        assert!(matches!(result.unwrap_err(), Error::WriteZero));
+            assert_eq!(buf.len(), 4_718_592);
+            assert_eq!(result, Err(Error::WriteZero));
+        }
+    }
+
+    #[test]
+    fn test_format_small_buffer() {
+        let time = Time::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, "");
+
+        let mut buf = [0u8; 3];
+        let result = TimeFormatter::new(&time, "%Y").fmt(&mut &mut buf[..]);
+        assert_eq!(result, Err(Error::WriteZero));
     }
 
     #[test]
