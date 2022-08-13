@@ -4,24 +4,24 @@ use crate::write::Write;
 
 /// A `Cursor` contains a slice of a buffer.
 #[derive(Debug, Clone)]
-pub struct Cursor<'a> {
+pub(crate) struct Cursor<'a> {
     /// Slice representing the remaining data to be read
     remaining: &'a [u8],
 }
 
 impl<'a> Cursor<'a> {
     /// Construct a new `Cursor` from remaining data
-    pub fn new(remaining: &'a [u8]) -> Self {
+    pub(crate) fn new(remaining: &'a [u8]) -> Self {
         Self { remaining }
     }
 
     /// Returns remaining data
-    pub fn remaining(&self) -> &'a [u8] {
+    pub(crate) fn remaining(&self) -> &'a [u8] {
         self.remaining
     }
 
     /// Returns the next byte
-    pub fn next(&mut self) -> Option<u8> {
+    pub(crate) fn next(&mut self) -> Option<u8> {
         match self.remaining {
             [first, tail @ ..] => {
                 self.remaining = tail;
@@ -32,7 +32,7 @@ impl<'a> Cursor<'a> {
     }
 
     /// Read bytes if the remaining data is prefixed by the provided tag
-    pub fn read_optional_tag(&mut self, tag: &[u8]) -> bool {
+    pub(crate) fn read_optional_tag(&mut self, tag: &[u8]) -> bool {
         if self.remaining.starts_with(tag) {
             self.read_exact(tag.len());
             true
@@ -42,7 +42,7 @@ impl<'a> Cursor<'a> {
     }
 
     /// Read bytes as long as the provided predicate is true
-    pub fn read_while<F: Fn(&u8) -> bool>(&mut self, f: F) -> &'a [u8] {
+    pub(crate) fn read_while<F: Fn(&u8) -> bool>(&mut self, f: F) -> &'a [u8] {
         match self.remaining.iter().position(|x| !f(x)) {
             None => self.read_exact(self.remaining.len()),
             Some(position) => self.read_exact(position),
@@ -50,7 +50,7 @@ impl<'a> Cursor<'a> {
     }
 
     /// Read bytes until the provided predicate is true
-    pub fn read_until<F: Fn(&u8) -> bool>(&mut self, f: F) -> &'a [u8] {
+    pub(crate) fn read_until<F: Fn(&u8) -> bool>(&mut self, f: F) -> &'a [u8] {
         match self.remaining.iter().position(f) {
             None => self.read_exact(self.remaining.len()),
             Some(position) => self.read_exact(position),
@@ -67,11 +67,11 @@ impl<'a> Cursor<'a> {
 
 /// Wrapper struct for converting an ASCII buffer to uppercase.
 #[derive(Debug)]
-pub struct Upper<'a>(&'a [u8]);
+pub(crate) struct Upper<'a>(&'a [u8]);
 
 impl<'a> Upper<'a> {
     /// Construct a new `Upper` wrapper
-    pub fn new(buf: &'a [u8]) -> Self {
+    pub(crate) fn new(buf: &'a [u8]) -> Self {
         assert!(buf.is_ascii());
         Self(buf)
     }
@@ -88,11 +88,11 @@ impl fmt::Display for Upper<'_> {
 
 /// Wrapper struct for converting an ASCII buffer to lowercase.
 #[derive(Debug)]
-pub struct Lower<'a>(&'a [u8]);
+pub(crate) struct Lower<'a>(&'a [u8]);
 
 impl<'a> Lower<'a> {
     /// Construct a new `Lower` wrapper
-    pub fn new(buf: &'a [u8]) -> Self {
+    pub(crate) fn new(buf: &'a [u8]) -> Self {
         assert!(buf.is_ascii());
         Self(buf)
     }
@@ -108,7 +108,7 @@ impl fmt::Display for Lower<'_> {
 }
 
 /// A `SizeLimiter` limits the maximum amount a writer can write.
-pub struct SizeLimiter<'a> {
+pub(crate) struct SizeLimiter<'a> {
     /// Inner writer
     inner: &'a mut dyn Write,
     /// Size limit
@@ -119,7 +119,7 @@ pub struct SizeLimiter<'a> {
 
 impl<'a> SizeLimiter<'a> {
     /// Construct a new `SizeLimiter`
-    pub fn new(inner: &'a mut dyn Write, max_size: usize) -> Self {
+    pub(crate) fn new(inner: &'a mut dyn Write, max_size: usize) -> Self {
         Self {
             inner,
             size_limit: max_size,

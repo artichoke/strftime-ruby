@@ -627,20 +627,20 @@ impl Piece {
 }
 
 #[derive(Debug)]
-pub struct TimeFormatter<'t, 'f> {
+pub(crate) struct TimeFormatter<'t, 'f> {
     time: &'t Time,
     format: &'f [u8],
 }
 
 impl<'t, 'f> TimeFormatter<'t, 'f> {
-    pub fn new<T: AsRef<[u8]> + ?Sized>(time: &'t Time, format: &'f T) -> Self {
+    pub(crate) fn new<T: AsRef<[u8]> + ?Sized>(time: &'t Time, format: &'f T) -> Self {
         Self {
             time,
             format: format.as_ref(),
         }
     }
 
-    pub fn fmt(&self, buf: &mut dyn Write) -> Result<(), Error> {
+    pub(crate) fn fmt(&self, buf: &mut dyn Write) -> Result<(), Error> {
         // Use a size limiter to avoid large writes
         let size_limit = self.format.len().saturating_mul(512 * 1024).max(1024);
         let mut f = SizeLimiter::new(buf, size_limit);

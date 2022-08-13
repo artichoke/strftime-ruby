@@ -25,7 +25,7 @@ impl<T: Write + ?Sized> fmt::Write for Adapter<'_, T> {
 }
 
 /// Simplified copy of the [`std::io::Write`] trait.
-pub trait Write {
+pub(crate) trait Write {
     /// Write a buffer into this writer, returning how many bytes were written.
     fn write(&mut self, data: &[u8]) -> usize;
 

@@ -1,18 +1,20 @@
-#![allow(clippy::module_name_repetitions)]
-
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum WeekStart {
+pub(crate) enum WeekStart {
     Sunday = 0,
     Monday = 1,
 }
 
-pub fn week_number(week_day: i64, year_day_1: i64, week_start: WeekStart) -> i64 {
+pub(crate) fn week_number(week_day: i64, year_day_1: i64, week_start: WeekStart) -> i64 {
     let year_day = year_day_1 - 1;
     let start_of_first_week = (year_day - week_day + week_start as i64).rem_euclid(7);
     (year_day + 7 - start_of_first_week) / 7
 }
 
-pub fn iso_8601_year_and_week_number(year: i64, week_day: i64, year_day_1: i64) -> (i64, i64) {
+pub(crate) fn iso_8601_year_and_week_number(
+    year: i64,
+    week_day: i64,
+    year_day_1: i64,
+) -> (i64, i64) {
     let year_day = year_day_1 - 1;
 
     let mut start_of_first_week = (year_day - week_day + 1).rem_euclid(7);
