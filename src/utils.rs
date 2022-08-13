@@ -1,6 +1,7 @@
 use core::fmt;
 
 use crate::write::Write;
+use crate::Error;
 
 /// A `Cursor` contains a slice of a buffer.
 #[derive(Debug, Clone)]
@@ -129,10 +130,14 @@ impl<'a> SizeLimiter<'a> {
 }
 
 impl<'a> Write for SizeLimiter<'a> {
-    fn write(&mut self, buf: &[u8]) -> usize {
+    fn write(&mut self, buf: &[u8]) -> Result<usize, Error> {
+        if self.count == self.size_limit {
+            return Err(Error::FormattedStringTooLarge);
+        }
+
         let write_limit = buf.len().min(self.size_limit - self.count);
-        let written = self.inner.write(&buf[..write_limit]);
+        let written = self.inner.write(&buf[..write_limit])?;
         self.count += written;
-        written
+        Ok(written)
     }
 }

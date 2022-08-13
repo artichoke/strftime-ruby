@@ -27,12 +27,12 @@ impl<T: Write + ?Sized> fmt::Write for Adapter<'_, T> {
 /// Simplified copy of the [`std::io::Write`] trait.
 pub(crate) trait Write {
     /// Write a buffer into this writer, returning how many bytes were written.
-    fn write(&mut self, data: &[u8]) -> usize;
+    fn write(&mut self, data: &[u8]) -> Result<usize, Error>;
 
     /// Attempts to write an entire buffer into this writer.
     fn write_all(&mut self, mut buf: &[u8]) -> Result<(), Error> {
         while !buf.is_empty() {
-            match self.write(buf) {
+            match self.write(buf)? {
                 0 => return Err(Error::WriteZero),
                 n => buf = &buf[n..],
             }
@@ -62,12 +62,12 @@ pub(crate) trait Write {
 
 /// Write is implemented for `&mut [u8]` by copying into the slice, overwriting its data.
 impl Write for &mut [u8] {
-    fn write(&mut self, data: &[u8]) -> usize {
+    fn write(&mut self, data: &[u8]) -> Result<usize, Error> {
         let size = data.len().min(self.len());
         let (a, b) = core::mem::take(self).split_at_mut(size);
         a.copy_from_slice(&data[..size]);
         *self = b;
-        size
+        Ok(size)
     }
 }
 
@@ -75,8 +75,8 @@ impl Write for &mut [u8] {
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 impl Write for Vec<u8> {
-    fn write(&mut self, buf: &[u8]) -> usize {
+    fn write(&mut self, buf: &[u8]) -> Result<usize, Error> {
         self.extend_from_slice(buf);
-        buf.len()
+        Ok(buf.len())
     }
 }

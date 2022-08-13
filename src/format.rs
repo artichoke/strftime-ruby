@@ -4,7 +4,7 @@ use core::str;
 
 use bitflags::bitflags;
 
-use crate::assert::{assert_is_ascii_uppercase, assert_sorted, assert_sorted_elem_0};
+use crate::assert::{assert_sorted, assert_sorted_elem_0, assert_to_ascii_uppercase};
 use crate::utils::{Cursor, Lower, SizeLimiter, Upper};
 use crate::week::{iso_8601_year_and_week_number, week_number, WeekStart};
 use crate::write::Write;
@@ -62,8 +62,8 @@ const MONTHS_UPPER: [&str; 12] = [
 
 // Check day and month tables
 const _: () = {
-    assert_is_ascii_uppercase(&DAYS, &DAYS_UPPER);
-    assert_is_ascii_uppercase(&MONTHS, &MONTHS_UPPER);
+    assert_to_ascii_uppercase(&DAYS, &DAYS_UPPER);
+    assert_to_ascii_uppercase(&MONTHS, &MONTHS_UPPER);
 };
 
 bitflags! {
@@ -639,7 +639,7 @@ impl<'t, 'f, T: Time> TimeFormatter<'t, 'f, T> {
     }
 
     pub(crate) fn fmt(&self, buf: &mut dyn Write) -> Result<(), Error> {
-        // Use a size limiter to avoid large writes
+        // Use a size limiter to limit the maximum size of the resulting formatted string
         let size_limit = self.format.len().saturating_mul(512 * 1024).max(1024);
         let mut f = SizeLimiter::new(buf, size_limit);
 
@@ -772,7 +772,7 @@ impl<'t, 'f, T: Time> TimeFormatter<'t, 'f, T> {
                     Ok(index) => Some(POSSIBLE_SPECS[index].1),
                     Err(_) => None,
                 },
-                None => return Err(Error::InvalidFormat),
+                None => return Err(Error::InvalidFormatString),
             }
         } else if cursor.read_optional_tag(b"z") {
             match colons.len() {
@@ -862,10 +862,10 @@ mod tests {
             Time::new(2094, 1, 2, 13, 18, 19, 9876, 6, 2, 3_913_273_099, false, 3600, "CET"),
         ];
 
-        check_format(&times[4], "%", Err(Error::InvalidFormat));
-        check_format(&times[4], "%-4", Err(Error::InvalidFormat));
-        check_format(&times[4], "%-", Err(Error::InvalidFormat));
-        check_format(&times[4], "%-_", Err(Error::InvalidFormat));
+        check_format(&times[4], "%", Err(Error::InvalidFormatString));
+        check_format(&times[4], "%-4", Err(Error::InvalidFormatString));
+        check_format(&times[4], "%-", Err(Error::InvalidFormatString));
+        check_format(&times[4], "%-_", Err(Error::InvalidFormatString));
 
         check_format(&times[4], "% ", Ok("% "));
         check_format(&times[4], "%-4 ", Ok("%-4 "));
@@ -988,15 +988,18 @@ mod tests {
             "%100000000000000000000m",
             Ok("%100000000000000000000m"),
         );
+    }
 
-        #[cfg(feature = "alloc")]
-        {
-            let mut buf = Vec::new();
-            let result = TimeFormatter::new(&time, "%4718593m").fmt(&mut buf);
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_format_formatted_string_too_large() {
+        let time = Time::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, "");
 
-            assert_eq!(buf.len(), 4_718_592);
-            assert_eq!(result, Err(Error::WriteZero));
-        }
+        let mut buf = Vec::new();
+        let result = TimeFormatter::new(&time, "%4718593m").fmt(&mut buf);
+
+        assert_eq!(buf.len(), 4_718_592);
+        assert_eq!(result, Err(Error::FormattedStringTooLarge));
     }
 
     #[test]

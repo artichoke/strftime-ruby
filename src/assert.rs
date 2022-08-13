@@ -22,7 +22,7 @@ pub(crate) const fn assert_sorted_elem_0<T>(s: &[(u8, T)]) -> &[(u8, T)] {
 }
 
 #[allow(dead_code)]
-pub(crate) const fn assert_is_ascii_uppercase(table: &[&str], upper_table: &[&str]) {
+pub(crate) const fn assert_to_ascii_uppercase(table: &[&str], upper_table: &[&str]) {
     assert!(table.len() == upper_table.len());
 
     let mut index = 0;

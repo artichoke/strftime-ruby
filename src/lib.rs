@@ -34,15 +34,39 @@ mod utils;
 mod week;
 mod write;
 
-use format::TimeFormatter;
+use core::fmt;
 
+/// Error type returned by the `strftime` functions.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Error {
-    InvalidFormat,
+    /// Provided format string is ended by an unterminated format specifier.
+    InvalidFormatString,
+    /// Formatted string is too large and could cause an out-of-memory error.
+    FormattedStringTooLarge,
+    /// Provided buffer for the [`buffered::strftime`] function is too small for the formatted string.
+    ///
+    /// This corresponds to the [`std::io::ErrorKind::WriteZero`] variant.
     WriteZero,
+    /// Formatting error, corresponding to [`core::fmt::Error`].
     FmtError,
 }
 
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Error::InvalidFormatString => write!(f, "invalid format string"),
+            Error::FormattedStringTooLarge => write!(f, "formatted string too large"),
+            Error::WriteZero => write!(f, "failed to write the whole buffer"),
+            Error::FmtError => write!(f, "formatter error"),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+impl std::error::Error for Error {}
+
+/// Common methods needed for formatting _time_.
 pub trait Time {
     /// Returns the year for _time_ (including the century).
     fn year(&self) -> i32;
@@ -73,7 +97,8 @@ pub trait Time {
 }
 
 pub mod buffered {
-    use super::{Error, Time, TimeFormatter};
+    use super::{Error, Time};
+    use crate::format::TimeFormatter;
 
     pub fn strftime(time: &impl Time, format: &[u8], mut buf: &mut [u8]) -> Result<(), Error> {
         TimeFormatter::new(time, format).fmt(&mut buf)
@@ -83,7 +108,8 @@ pub mod buffered {
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub mod bytes {
-    use super::{Error, Time, TimeFormatter};
+    use super::{Error, Time};
+    use crate::format::TimeFormatter;
 
     pub fn strftime(time: &impl Time, format: &[u8]) -> Result<Vec<u8>, Error> {
         let mut buf = Vec::new();
@@ -95,11 +121,12 @@ pub mod bytes {
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub mod string {
-    use super::{Error, Time, TimeFormatter};
+    use super::{Error, Time};
+    use crate::format::TimeFormatter;
 
     pub fn strftime(time: &impl Time, format: &str) -> Result<String, Error> {
         let mut buf = Vec::new();
         TimeFormatter::new(time, format).fmt(&mut buf)?;
-        Ok(String::from_utf8(buf).expect("resulting string should be valid UTF-8"))
+        Ok(String::from_utf8(buf).expect("formatted string should be valid UTF-8"))
     }
 }
