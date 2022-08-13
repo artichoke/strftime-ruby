@@ -10,6 +10,11 @@ use crate::week::{iso_8601_year_and_week_number, week_number, WeekStart};
 use crate::write::Write;
 use crate::{Error, Time};
 
+#[cfg(feature = "std")]
+type Int = std::os::raw::c_int;
+#[cfg(not(feature = "std"))]
+type Int = i32;
+
 const DAYS: [&str; 7] = [
     "Sunday",
     "Monday",
@@ -699,9 +704,9 @@ impl<'t, 'f, T: Time> TimeFormatter<'t, 'f, T> {
             .expect("reading ASCII digits should yield a valid UTF-8 slice");
 
         let width = match width_digits.parse::<usize>() {
-            Ok(width) => Some(width),
+            Ok(width) if Int::try_from(width).is_ok() => Some(width),
             Err(err) if *err.kind() == IntErrorKind::Empty => None,
-            Err(_) => return Ok(None),
+            _ => return Ok(None),
         };
 
         // Ignore POSIX locale extensions (https://github.com/ruby/ruby/blob/4491bb740a9506d76391ac44bb2fe6e483fec952/strftime.c#L713-L722)
@@ -981,13 +986,9 @@ mod tests {
     fn test_format_large_width() {
         let time = Time::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, "");
 
+        check_format(&time, "%2147483647m", Err(Error::WriteZero));
+        check_format(&time, "%2147483648m", Ok("%2147483648m"));
         check_format(&time, "%-100000000m", Ok("1"));
-
-        check_format(
-            &time,
-            "%100000000000000000000m",
-            Ok("%100000000000000000000m"),
-        );
     }
 
     #[cfg(feature = "alloc")]
