@@ -100,8 +100,18 @@ pub mod buffered {
     use super::{Error, Time};
     use crate::format::TimeFormatter;
 
-    pub fn strftime(time: &impl Time, format: &[u8], mut buf: &mut [u8]) -> Result<(), Error> {
-        TimeFormatter::new(time, format).fmt(&mut buf)
+    pub fn strftime<'a>(
+        time: &impl Time,
+        format: &[u8],
+        buf: &'a mut [u8],
+    ) -> Result<&'a mut [u8], Error> {
+        let len = buf.len();
+
+        let mut cursor = &mut buf[..];
+        TimeFormatter::new(time, format).fmt(&mut cursor)?;
+        let remaining_len = cursor.len();
+
+        Ok(&mut buf[..len - remaining_len])
     }
 }
 
