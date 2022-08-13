@@ -34,6 +34,9 @@ mod utils;
 mod week;
 mod write;
 
+#[cfg(test)]
+mod tests;
+
 use core::fmt;
 
 /// Error type returned by the `strftime` functions.
