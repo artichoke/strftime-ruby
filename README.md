@@ -43,11 +43,13 @@ All features are enabled by default.
 - **std** - Enables a dependency on the Rust Standard Library. Activating this
   feature also activates the **alloc** feature.
 - **alloc** - Enables a dependency on the Rust [`alloc`] crate. Activating this
-  feature enables APIs that require [`alloc::vec::Vec`] or [`alloc::string::String`].
+  feature enables APIs that require [`alloc::vec::Vec`] or
+  [`alloc::string::String`].
 
 [`alloc`]: https://doc.rust-lang.org/alloc/
-[`alloc::vec::Vec`]: https://doc.rust-lang.org/alloc/vec/struct.Vec.html
-[`alloc::string::string`]: https://doc.rust-lang.org/alloc/string/struct.String.html
+[`alloc::vec::vec`]: https://doc.rust-lang.org/alloc/vec/struct.Vec.html
+[`alloc::string::string`]:
+  https://doc.rust-lang.org/alloc/string/struct.String.html
 
 ### Minimum Supported Rust Version
 
