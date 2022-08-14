@@ -1,15 +1,39 @@
+//! Module containing week-related items.
+
+/// Start day of the week.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub(crate) enum WeekStart {
+    /// Sunday.
     Sunday = 0,
+    /// Monday.
     Monday = 1,
 }
 
+/// Compute the week number, beginning at the provided start day of the week.
+///
+/// ## Inputs
+///
+/// * `week_day`: Day of the week from Sunday in `0..=6`.
+/// * `year_day_1`: Day of the year in `1..=366`.
+/// * `week_start`: Start day of the week.
+///
 pub(crate) fn week_number(week_day: i64, year_day_1: i64, week_start: WeekStart) -> i64 {
     let year_day = year_day_1 - 1;
     let start_of_first_week = (year_day - week_day + week_start as i64).rem_euclid(7);
     (year_day + 7 - start_of_first_week) / 7
 }
 
+/// Compute the ISO 8601 week-based year and week number.
+///
+/// The first week of `YYYY` starts with a Monday and includes `YYYY-01-04`.
+/// The days in the year before the first week are in the last week of the previous year.
+///
+/// ## Inputs
+///
+/// * `year`: Year.
+/// * `week_day`: Day of the week from Sunday in `0..=6`.
+/// * `year_day_1`: Day of the year in `1..=366`.
+///
 pub(crate) fn iso_8601_year_and_week_number(
     year: i64,
     week_day: i64,
@@ -56,6 +80,7 @@ pub(crate) fn iso_8601_year_and_week_number(
     (year, week_number)
 }
 
+/// Check if a year is a leap year
 fn is_leap_year(year: i64) -> bool {
     year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)
 }

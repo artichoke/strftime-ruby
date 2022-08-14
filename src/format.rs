@@ -1,3 +1,5 @@
+//! Module containing the formatting logic.
+
 use core::fmt;
 use core::num::IntErrorKind;
 use core::str;
@@ -10,11 +12,14 @@ use crate::week::{iso_8601_year_and_week_number, week_number, WeekStart};
 use crate::write::Write;
 use crate::{Error, Time};
 
+/// Alias to a `c_int`.
 #[cfg(feature = "std")]
 type Int = std::os::raw::c_int;
+/// Fallback alias to a `c_int`.
 #[cfg(not(feature = "std"))]
 type Int = i32;
 
+/// List of weekday names.
 const DAYS: [&str; 7] = [
     "Sunday",
     "Monday",
@@ -25,6 +30,7 @@ const DAYS: [&str; 7] = [
     "Saturday",
 ];
 
+/// List of uppercase weekday names.
 const DAYS_UPPER: [&str; 7] = [
     "SUNDAY",
     "MONDAY",
@@ -35,6 +41,7 @@ const DAYS_UPPER: [&str; 7] = [
     "SATURDAY",
 ];
 
+/// List of month names.
 const MONTHS: [&str; 12] = [
     "January",
     "February",
@@ -50,6 +57,7 @@ const MONTHS: [&str; 12] = [
     "December",
 ];
 
+/// List of uppercase month names.
 const MONTHS_UPPER: [&str; 12] = [
     "JANUARY",
     "FEBRUARY",
@@ -72,128 +80,143 @@ const _: () = {
 };
 
 bitflags! {
+    /// Formatting flags.
     struct Flags: u32 {
+        /// Use left padding, removing all other padding options in most cases.
         const LEFT_PADDING = 1 << 0;
+        /// Change case for a string value.
         const CHANGE_CASE  = 1 << 1;
+        /// Convert a string value to uppercase.
         const UPPER_CASE   = 1 << 2;
     }
 }
 
 impl Flags {
+    /// Check if one of the case flags is set.
     fn has_change_or_upper_case(self) -> bool {
         let flag = Flags::CHANGE_CASE | Flags::UPPER_CASE;
         !self.intersection(flag).is_empty()
     }
 }
 
+/// Padding method.
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
 enum Padding {
+    /// Left padding.
     #[default]
     Left,
+    /// Padding with spaces.
     Spaces,
+    /// Padding with zeros.
     Zeros,
 }
 
+/// Formatting specifier.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum Spec {
-    /// %Y
+    /// `"%Y"`: Year with century if provided, zero-padded to at least 4 digits plus the possible negative sign.
     Year4Digits,
-    /// %C
+    /// `"%C"`: `Year / 100` using Euclidian division, zero-padded to 2 digits.
     YearDiv100,
-    /// %y
+    /// `"%y"`: `Year % 100` in `00..=99`, using Euclidian remainder, zero-padded to 2 digits.
     YearRem100,
-    /// %m
+    /// `"%m"`: Month of the year in `01..=12`, zero-padded to 2 digits.
     Month,
-    /// %B
+    /// `"%B"`: Locale independent full month name.
     MonthName,
-    /// %b, %h
+    /// `"%b"` and `"%h"`: Locale independent abbreviated month name, using the first 3 letters.
     MonthNameAbbr,
-    /// %d
+    /// `"%d"`: Day of the month in `01..=31`, zero-padded to 2 digits.
     MonthDayZero,
-    /// %e
+    /// `"%e"`: Day of the month in ` 1..=31`, blank-padded to 2 digits.
     MonthDaySpace,
-    /// %j
+    /// `"%j"`: Day of the year in `001..=366`, zero-padded to 3 digits.
     YearDay,
-    /// %H
+    /// `"%H"`: Hour of the day (24-hour clock) in `00..=23`, zero-padded to 2 digits.
     Hour24hZero,
-    /// %k
+    /// `"%k"`: Hour of the day (24-hour clock) in ` 0..=23`, blank-padded to 2 digits.
     Hour24hSpace,
-    /// %I
+    /// `"%I"`: Hour of the day (12-hour clock) in `01..=12`, zero-padded to 2 digits.
     Hour12hZero,
-    /// %l
+    /// `"%l"`: Hour of the day (12-hour clock) in ` 1..=12`, blank-padded to 2 digits.
     Hour12hSpace,
-    /// %P
+    /// `"%P"`: Lowercase meridian indicator (`"am"` or `"pm"`).
     MeridianLower,
-    /// %p
+    /// `"%p"`: Uppercase meridian indicator (`"AM"` or `"PM"`).
     MeridianUpper,
-    /// %M
+    /// `"%M"`: Minute of the hour in `00..=59`, zero-padded to 2 digits.
     Minute,
-    /// %S
+    /// `"%S"`: Second of the minute in `00..=60`, zero-padded to 2 digits.
     Second,
-    /// %L
+    /// `"%L"`: Troncated fractional seconds digits, with 3 digits by default. Number of digits is specified by the width field.
     MilliSecond,
-    /// %N
+    /// `"%N"`: Troncated fractional seconds digits, with 9 digits by default. Number of digits is specified by the width field.
     FractionalSecond,
-    /// %z
+    /// `"%z"`: Zero-padded signed time zone UTC hour and minute offsets (`+hhmm`).
     TimeZoneOffsetHourMinute,
-    /// %:z
+    /// `"%:z"`: Zero-padded signed time zone UTC hour and minute offsets with colons (`+hh:mm`).
     TimeZoneOffsetHourMinuteColon,
-    /// %::z
+    /// `"%::z"`: Zero-padded signed time zone UTC hour, minute and second offsets with colons (`+hh:mm:ss`).
     TimeZoneOffsetHourMinuteSecondColon,
-    /// %:::z
+    /// `"%:::z"`: Zero-padded signed time zone UTC hour offset, with optional minute and second offsets with colons (`+hh[:mm[:ss]]`).
     TimeZoneOffsetColonMinimal,
-    /// %Z
+    /// `"%Z"`: Platform-dependent abbreviated time zone name.
     TimeZoneName,
-    /// %A
+    /// `"%A"`: Locale independent full weekday name.
     WeekDayName,
-    /// %a
+    /// `"%a"`: Locale independent abbreviated weekday name, using the first 3 letters.
     WeekDayNameAbbr,
-    /// %u
+    /// `"%u"`: Day of the week from Monday in `1..=7`, zero-padded to 1 digit.
     WeekDayFrom1,
-    /// %w
+    /// `"%w"`: Day of the week from Sunday in `0..=6`, zero-padded to 1 digit.
     WeekDayFrom0,
-    /// %G
+    /// `"%G"`: ISO 8601 week-based year, zero-padded to at least 4 digits plus the possible negative sign.
     YearIso8601,
-    /// %g
+    /// `"%g"`: `ISO 8601 week-based year % 100` in `00..=99`, using Euclidian remainder, zero-padded to 2 digits.
     YearIso8601Rem100,
-    /// %V
+    /// `"%V"`: ISO 8601 week number in `01..=53`, zero-padded to 2 digits.
     WeekNumberIso8601,
-    /// %U
+    /// `"%U"`: Week number from Sunday in `00..=53`, zero-padded to 2 digits. The week `1` starts with the first Sunday of the year.
     WeekNumberFromSunday,
-    /// %W
+    /// `"%W"`: Week number from Monday in `00..=53`, zero-padded to 2 digits. The week `1` starts with the first Monday of the year.
     WeekNumberFromMonday,
-    /// %s
+    /// `"%s"`: Number of seconds since `1970-01-01 00:00:00 UTC`, zero-padded to at least 1 digit.
     SecondsSinceEpoch,
-    /// %n
+    /// `"%n"`: Newline character `'\n'`.
     Newline,
-    /// %t
+    /// `"%t"`: Tab character `'\n'`.
     Tabulation,
-    /// %%
+    /// `"%%"`: Literal `'%'` character.
     Percent,
-    /// %c --> "%a %b %e %H:%M:%S %Y"
+    /// `"%c"`: Date and time, equivalent to `"%a %b %e %H:%M:%S %Y"`.
     CombinationDateTime,
-    /// %D, %x --> "%m/%d/%y"
+    /// `"%D"` and `"%x"`: Date, equivalent to `"%m/%d/%y"`.
     CombinationDate,
-    /// %F --> "%Y-%m-%d"
+    /// `"%F"`: ISO 8601 date, equivalent to `"%Y-%m-%d"`.
     CombinationIso8601,
-    /// %v --> "%e-%^b-%4Y"
+    /// `"%v"`: VMS date, equivalent to `"%e-%^b-%4Y"`.
     CombinationVmsDate,
-    /// %r --> "%I:%M:%S %p"
+    /// `"%r"`: 12-hour time, equivalent to `"%I:%M:%S %p"`.
     CombinationTime12h,
-    /// %R --> "%H:%M"
+    /// `"%R"`: 24-hour time without seconds, equivalent to `"%H:%M"`.
     CombinationHourMinute24h,
-    /// %T, %X --> "%H:%M:%S"
+    /// `"%T"` and `"%X"`: 24-hour time, equivalent to `"%H:%M:%S"`.
     CombinationTime24h,
 }
 
+/// UTC offset parts.
 #[derive(Debug)]
 struct UtcOffset {
+    /// Signed hour.
     hour: f64,
+    /// Minute.
     minute: u32,
+    /// Second.
     second: u32,
 }
 
 impl UtcOffset {
+    /// Construct a new `UtcOffset`.
     fn new(hour: f64, minute: u32, second: u32) -> Self {
         Self {
             hour,
@@ -203,15 +226,21 @@ impl UtcOffset {
     }
 }
 
+/// Formatting directive.
 #[derive(Debug)]
 struct Piece {
+    /// Optional width.
     width: Option<usize>,
+    /// Padding method.
     padding: Padding,
+    /// Formatting flags.
     flags: Flags,
+    /// Formatting specifier.
     spec: Spec,
 }
 
 impl Piece {
+    /// Construct a new `Piece`.
     fn new(width: Option<usize>, padding: Padding, flags: Flags, spec: Spec) -> Self {
         Self {
             width,
@@ -221,6 +250,7 @@ impl Piece {
         }
     }
 
+    /// Format a numerical value, padding with zeros by default.
     fn format_num_zeros(
         &self,
         f: &mut SizeLimiter<'_>,
@@ -238,6 +268,7 @@ impl Piece {
         }
     }
 
+    /// Format a numerical value, padding with spaces by default.
     fn format_num_spaces(
         &self,
         f: &mut SizeLimiter<'_>,
@@ -255,6 +286,7 @@ impl Piece {
         }
     }
 
+    /// Format nanoseconds with the specified precision.
     fn format_nanoseconds(
         &self,
         f: &mut SizeLimiter<'_>,
@@ -271,6 +303,7 @@ impl Piece {
         }
     }
 
+    /// Format a string value.
     fn format_string(&self, f: &mut SizeLimiter<'_>, s: impl fmt::Display) -> Result<(), Error> {
         match self.width {
             None => write!(f, "{}", s),
@@ -286,6 +319,7 @@ impl Piece {
         }
     }
 
+    /// Compute UTC offset parts for the `%z` specifier.
     fn compute_offset_parts(&self, time: &impl Time) -> UtcOffset {
         let utc_offset = time.utc_offset();
         let utc_offset_abs = utc_offset.unsigned_abs();
@@ -305,6 +339,7 @@ impl Piece {
         UtcOffset::new(hour, minute, second)
     }
 
+    /// Compute hour padding for the `%z` specifier.
     fn hour_padding(&self, min_width: usize) -> usize {
         const MIN_PADDING: usize = "+hh".len();
 
@@ -314,6 +349,7 @@ impl Piece {
         }
     }
 
+    /// Write the time zone UTC offset as `"+hh"`.
     fn write_offset_hh(
         &self,
         f: &mut SizeLimiter<'_>,
@@ -327,6 +363,7 @@ impl Piece {
         }
     }
 
+    /// Write the time zone UTC offset as `"+hhmm"`.
     fn write_offset_hhmm(
         &self,
         f: &mut SizeLimiter<'_>,
@@ -340,6 +377,7 @@ impl Piece {
         }
     }
 
+    /// Write the time zone UTC offset as `"+hh:mm"`.
     fn write_offset_hh_mm(
         &self,
         f: &mut SizeLimiter<'_>,
@@ -353,6 +391,7 @@ impl Piece {
         }
     }
 
+    /// Write the time zone UTC offset as `"+hh:mm:ss"`.
     fn write_offset_hh_mm_ss(
         &self,
         f: &mut SizeLimiter<'_>,
@@ -374,6 +413,7 @@ impl Piece {
         }
     }
 
+    /// Write padding for combination specifiers (`%c`, `%D`, `%x`, `%F`, `%v`, `%r`, `%R`, `%T`, `%X`).
     fn write_padding(&self, f: &mut SizeLimiter<'_>, min_width: usize) -> Result<(), Error> {
         if let Some(width) = self.width {
             let n = width.saturating_sub(min_width);
@@ -386,6 +426,7 @@ impl Piece {
         Ok(())
     }
 
+    /// Format time using the formatting directive.
     #[allow(clippy::too_many_lines)]
     fn fmt(&self, f: &mut SizeLimiter<'_>, time: &impl Time) -> Result<(), Error> {
         match self.spec {
@@ -630,12 +671,16 @@ impl Piece {
     }
 }
 
+/// Wrapper struct for formatting time with the provided format string.
 pub(crate) struct TimeFormatter<'t, 'f, T> {
+    /// Time implementation
     time: &'t T,
+    /// Format string
     format: &'f [u8],
 }
 
 impl<'t, 'f, T: Time> TimeFormatter<'t, 'f, T> {
+    /// Construct a new `TimeFormatter` wrapper.
     pub(crate) fn new<F: AsRef<[u8]> + ?Sized>(time: &'t T, format: &'f F) -> Self {
         Self {
             time,
@@ -643,6 +688,7 @@ impl<'t, 'f, T: Time> TimeFormatter<'t, 'f, T> {
         }
     }
 
+    /// Format time using the format string.
     pub(crate) fn fmt(&self, buf: &mut dyn Write) -> Result<(), Error> {
         // Use a size limiter to limit the maximum size of the resulting formatted string
         let size_limit = self.format.len().saturating_mul(512 * 1024).max(1024);
@@ -674,6 +720,7 @@ impl<'t, 'f, T: Time> TimeFormatter<'t, 'f, T> {
         Ok(())
     }
 
+    /// Parse a formatting directive.
     fn parse_spec(cursor: &mut Cursor<'_>) -> Result<Option<Piece>, Error> {
         // Parse flags
         let mut padding = Padding::default();
@@ -794,6 +841,7 @@ impl<'t, 'f, T: Time> TimeFormatter<'t, 'f, T> {
     }
 }
 
+/// Compute the width of the string representation of a year.
 fn year_width(year: i32) -> usize {
     let mut n = if year <= 0 { 1 } else { 0 };
     let mut val = year;

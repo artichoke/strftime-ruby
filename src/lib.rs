@@ -99,10 +99,39 @@ pub trait Time {
     fn time_zone(&self) -> &str;
 }
 
+/// Provides a buffered `strftime` implementation using a format string with arbitrary bytes.
 pub mod buffered {
     use super::{Error, Time};
     use crate::format::TimeFormatter;
 
+    /// Format a _time_ implementation with the specified format byte string,
+    /// writing in the provided buffer and returning the written subslice.
+    ///
+    /// See the [crate-level documentation](crate) for a complete description of possible format specifiers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use strftime::buffered::strftime;
+    /// use strftime::Time;
+    ///
+    /// // Not shown: create a time implementation with the year 1970
+    /// // let time = ...;
+    /// # include!("mock.rs.in");
+    /// # fn main() -> Result<(), strftime::Error> {
+    /// # let time = MockTime { year: 1970, ..Default::default() };
+    /// assert_eq!(time.year(), 1970);
+    ///
+    /// let mut buf = [0u8; 8];
+    /// assert_eq!(strftime(&time, b"%Y", &mut buf)?, b"1970");
+    /// assert_eq!(buf, *b"1970\0\0\0\0");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Can produce an [`Error`](crate::Error) when the formatting fails.
     pub fn strftime<'a>(
         time: &impl Time,
         format: &[u8],
@@ -118,12 +147,38 @@ pub mod buffered {
     }
 }
 
+/// Provides a `strftime` implementation using a format string with arbitrary bytes.
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub mod bytes {
     use super::{Error, Time};
     use crate::format::TimeFormatter;
 
+    /// Format a _time_ implementation with the specified format byte string.
+    ///
+    /// See the [crate-level documentation](crate) for a complete description of possible format specifiers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use strftime::bytes::strftime;
+    /// use strftime::Time;
+    ///
+    /// // Not shown: create a time implementation with the year 1970
+    /// // let time = ...;
+    /// # include!("mock.rs.in");
+    /// # fn main() -> Result<(), strftime::Error> {
+    /// # let time = MockTime { year: 1970, ..Default::default() };
+    /// assert_eq!(time.year(), 1970);
+    ///
+    /// assert_eq!(strftime(&time, b"%Y")?, b"1970");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Can produce an [`Error`](crate::Error) when the formatting fails.
     pub fn strftime(time: &impl Time, format: &[u8]) -> Result<Vec<u8>, Error> {
         let mut buf = Vec::new();
         TimeFormatter::new(time, format).fmt(&mut buf)?;
@@ -131,12 +186,38 @@ pub mod bytes {
     }
 }
 
+/// Provides a `strftime` implementation using a UTF-8 format string.
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub mod string {
     use super::{Error, Time};
     use crate::format::TimeFormatter;
 
+    /// Format a _time_ implementation with the specified UTF-8 format string.
+    ///
+    /// See the [crate-level documentation](crate) for a complete description of possible format specifiers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use strftime::string::strftime;
+    /// use strftime::Time;
+    ///
+    /// // Not shown: create a time implementation with the year 1970
+    /// // let time = ...;
+    /// # include!("mock.rs.in");
+    /// # fn main() -> Result<(), strftime::Error> {
+    /// # let time = MockTime { year: 1970, ..Default::default() };
+    /// assert_eq!(time.year(), 1970);
+    ///
+    /// assert_eq!(strftime(&time, "%Y")?, "1970");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Can produce an [`Error`](crate::Error) when the formatting fails.
     pub fn strftime(time: &impl Time, format: &str) -> Result<String, Error> {
         let mut buf = Vec::new();
         TimeFormatter::new(time, format).fmt(&mut buf)?;

@@ -8,7 +8,9 @@ use crate::Error;
 /// An `Adapter` implements [`core::fmt::Write`] from a [`Write`] object,
 /// storing write errors instead of discarding them.
 struct Adapter<'a, T: ?Sized> {
+    /// Inner writer.
     inner: &'a mut T,
+    /// Write result.
     error: Result<(), Error>,
 }
 

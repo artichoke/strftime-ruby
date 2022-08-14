@@ -1,42 +1,9 @@
 use crate::format::TimeFormatter;
-use crate::Error;
+use crate::{Error, Time};
 
-macro_rules! create_time {
-    ($($field_name:ident: $field_type:ty),*,) => {
-        struct Time<'a> {
-            $($field_name: $field_type),*,
-        }
+include!("mock.rs.in");
 
-        impl<'a> Time<'a> {
-            #[allow(clippy::too_many_arguments)]
-            fn new($($field_name: $field_type),*) -> Self {
-                Self { $($field_name),* }
-            }
-        }
-
-        impl<'a> crate::Time for Time<'a> {
-            $(fn $field_name(&self) -> $field_type { self.$field_name })*
-        }
-    };
-}
-
-create_time!(
-    year: i32,
-    month: u8,
-    day: u8,
-    hour: u8,
-    minute: u8,
-    second: u8,
-    nanoseconds: u32,
-    day_of_week: u8,
-    day_of_year: u16,
-    to_int: i64,
-    is_utc: bool,
-    utc_offset: i32,
-    time_zone: &'a str,
-);
-
-fn check_format(time: &Time<'_>, format: &str, expected: Result<&str, Error>) {
+fn check_format(time: &MockTime<'_>, format: &str, expected: Result<&str, Error>) {
     const SIZE: usize = 100;
     let mut buf = [0u8; SIZE];
     let mut cursor = &mut buf[..];
@@ -52,12 +19,12 @@ fn check_format(time: &Time<'_>, format: &str, expected: Result<&str, Error>) {
 fn test_format() {
     #[rustfmt::skip]
     let times = [
-        Time::new(1, 1, 1, 1, 1, 1, 1, 1, 1, -62_135_593_139, true, 0, "UTC"),
-        Time::new(1, 1, 1, 1, 1, 1, 1, 1, 1, -62_135_593_139, false, 0, "UTC"),
-        Time::new(1, 1, 1, 1, 1, 1, 1, 1, 1, -62_135_593_139, false, 0, "+0000"),
-        Time::new(1, 1, 1, 1, 1, 1, 1, 1, 1, -62_135_593_139, false, 0, ""),
-        Time::new(-94, 1, 2, 13, 18, 19, 9876, 2, 2, -65_133_456_662, false, 561, "LMT"),
-        Time::new(2094, 1, 2, 13, 18, 19, 9876, 6, 2, 3_913_273_099, false, 3600, "CET"),
+        MockTime::new(1, 1, 1, 1, 1, 1, 1, 1, 1, -62_135_593_139, true, 0, "UTC"),
+        MockTime::new(1, 1, 1, 1, 1, 1, 1, 1, 1, -62_135_593_139, false, 0, "UTC"),
+        MockTime::new(1, 1, 1, 1, 1, 1, 1, 1, 1, -62_135_593_139, false, 0, "+0000"),
+        MockTime::new(1, 1, 1, 1, 1, 1, 1, 1, 1, -62_135_593_139, false, 0, ""),
+        MockTime::new(-94, 1, 2, 13, 18, 19, 9876, 2, 2, -65_133_456_662, false, 561, "LMT"),
+        MockTime::new(2094, 1, 2, 13, 18, 19, 9876, 6, 2, 3_913_273_099, false, 3600, "CET"),
     ];
 
     check_format(&times[4], "%", Err(Error::InvalidFormatString));
@@ -177,7 +144,7 @@ fn test_format() {
 
 #[test]
 fn test_format_large_width() {
-    let time = Time::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, "");
+    let time = MockTime::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, "");
 
     check_format(&time, "%2147483647m", Err(Error::WriteZero));
     check_format(&time, "%2147483648m", Ok("%2147483648m"));
@@ -187,7 +154,7 @@ fn test_format_large_width() {
 #[cfg(feature = "alloc")]
 #[test]
 fn test_format_formatted_string_too_large() {
-    let time = Time::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, "");
+    let time = MockTime::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, "");
 
     let mut buf = Vec::new();
     let result = TimeFormatter::new(&time, "%4718593m").fmt(&mut buf);
@@ -198,7 +165,7 @@ fn test_format_formatted_string_too_large() {
 
 #[test]
 fn test_format_small_buffer() {
-    let time = Time::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, "");
+    let time = MockTime::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, "");
 
     let mut buf = [0u8; 3];
     let result = TimeFormatter::new(&time, "%Y").fmt(&mut &mut buf[..]);
