@@ -1,5 +1,7 @@
 //! This module is a copy of the [`std::io::Write`] implementation,
 //! in order to use it in a no-std context.
+//!
+//! [`std::io::Write`]: <https://doc.rust-lang.org/std/io/trait.Write.html>
 
 use core::fmt;
 
@@ -27,6 +29,8 @@ impl<T: Write + ?Sized> fmt::Write for Adapter<'_, T> {
 }
 
 /// Simplified copy of the [`std::io::Write`] trait.
+///
+/// [`std::io::Write`]: <https://doc.rust-lang.org/std/io/trait.Write.html>
 pub(crate) trait Write {
     /// Write a buffer into this writer, returning how many bytes were written.
     fn write(&mut self, data: &[u8]) -> Result<usize, Error>;

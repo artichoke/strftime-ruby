@@ -127,6 +127,8 @@ pub enum Error {
     /// Provided buffer for the [`buffered::strftime`] function is too small for the formatted string.
     ///
     /// This corresponds to the [`std::io::ErrorKind::WriteZero`] variant.
+    ///
+    /// [`std::io::ErrorKind::WriteZero`]: <https://doc.rust-lang.org/std/io/enum.ErrorKind.html#variant.WriteZero>
     WriteZero,
     /// Formatting error, corresponding to [`core::fmt::Error`].
     FmtError,
