@@ -817,11 +817,6 @@ fn test_format_invalid() {
 fn test_format_literal() {
     let time = MockTime::default();
 
-    check_format(&time, "%", Err(Error::InvalidFormatString));
-    check_format(&time, "%-4", Err(Error::InvalidFormatString));
-    check_format(&time, "%-", Err(Error::InvalidFormatString));
-    check_format(&time, "%-_", Err(Error::InvalidFormatString));
-
     check_format(&time, "% ", Ok("% "));
     check_format(&time, "%-4 ", Ok("%-4 "));
     check_format(&time, "%- ", Ok("%- "));
