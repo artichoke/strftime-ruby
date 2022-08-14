@@ -638,7 +638,7 @@ impl Piece {
                 let month = time.month();
                 let day = time.day();
 
-                write!(f, "{:02}:{:02}:{:02}", month, day, year)
+                write!(f, "{:02}/{:02}/{:02}", month, day, year)
             }
             Spec::CombinationIso8601 => {
                 const MIN_WIDTH_NO_YEAR: usize = "-mm-dd".len();
