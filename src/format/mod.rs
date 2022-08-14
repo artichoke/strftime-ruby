@@ -121,7 +121,7 @@ enum Padding {
 enum Spec {
     /// `"%Y"`: Year with century if provided, zero-padded to at least 4 digits plus the possible negative sign.
     Year4Digits,
-    /// `"%C"`: `Year / 100` using Euclidian division, zero-padded to 2 digits.
+    /// `"%C"`: `Year / 100` using Euclidian division, zero-padded to at least 2 digits.
     YearDiv100,
     /// `"%y"`: `Year % 100` in `00..=99`, using Euclidian remainder, zero-padded to 2 digits.
     YearRem100,
@@ -175,9 +175,9 @@ enum Spec {
     WeekDayFrom1,
     /// `"%w"`: Day of the week from Sunday in `0..=6`, zero-padded to 1 digit.
     WeekDayFrom0,
-    /// `"%G"`: ISO 8601 week-based year, zero-padded to at least 4 digits plus the possible negative sign.
+    /// `"%G"`: Same as `%Y`, but using the ISO 8601 week-based year.
     YearIso8601,
-    /// `"%g"`: `ISO 8601 week-based year % 100` in `00..=99`, using Euclidian remainder, zero-padded to 2 digits.
+    /// `"%g"`: Same as `%y`, but using the ISO 8601 week-based year.
     YearIso8601Rem100,
     /// `"%V"`: ISO 8601 week number in `01..=53`, zero-padded to 2 digits.
     WeekNumberIso8601,
@@ -189,7 +189,7 @@ enum Spec {
     SecondsSinceEpoch,
     /// `"%n"`: Newline character `'\n'`.
     Newline,
-    /// `"%t"`: Tab character `'\n'`.
+    /// `"%t"`: Tab character `'\t'`.
     Tabulation,
     /// `"%%"`: Literal `'%'` character.
     Percent,
