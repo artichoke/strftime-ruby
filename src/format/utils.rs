@@ -2,7 +2,7 @@
 
 use core::fmt;
 
-use crate::write::Write;
+use super::write::Write;
 use crate::Error;
 
 /// A `Cursor` contains a slice of a buffer.

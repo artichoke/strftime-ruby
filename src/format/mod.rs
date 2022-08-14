@@ -1,16 +1,21 @@
 //! Module containing the formatting logic.
 
+mod assert;
+mod utils;
+mod week;
+mod write;
+
 use core::fmt;
 use core::num::IntErrorKind;
 use core::str;
 
 use bitflags::bitflags;
 
-use crate::assert::{assert_sorted, assert_sorted_elem_0, assert_to_ascii_uppercase};
-use crate::utils::{Cursor, Lower, SizeLimiter, Upper};
-use crate::week::{iso_8601_year_and_week_number, week_number, WeekStart};
-use crate::write::Write;
 use crate::{Error, Time};
+use assert::{assert_sorted, assert_sorted_elem_0, assert_to_ascii_uppercase};
+use utils::{Cursor, Lower, SizeLimiter, Upper};
+use week::{iso_8601_year_and_week_number, week_number, WeekStart};
+use write::Write;
 
 /// Alias to a `c_int`.
 #[cfg(feature = "std")]
