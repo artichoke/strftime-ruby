@@ -2,7 +2,7 @@
 name = "strftime-ruby"
 # remember to set `html_root_url` in `src/lib.rs`.
 version = "0.1.0"
-authors = ["Ryan Lopopolo <rjl@hyperbo.la>"]
+authors = ["Ryan Lopopolo <rjl@hyperbo.la>", "x-hgg-x"]
 license = "MIT"
 edition = "2021"
 rust-version = "1.58.0"
