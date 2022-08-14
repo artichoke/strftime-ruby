@@ -508,12 +508,12 @@ impl Piece {
             Spec::TimeZoneOffsetColonMinimal => {
                 let utc_offset = self.compute_offset_parts(time);
 
-                if utc_offset.second == 0 && utc_offset.minute == 0 {
-                    self.write_offset_hh(f, &utc_offset)
-                } else if utc_offset.minute == 0 {
+                if utc_offset.second != 0 {
+                    self.write_offset_hh_mm_ss(f, &utc_offset)
+                } else if utc_offset.minute != 0 {
                     self.write_offset_hh_mm(f, &utc_offset)
                 } else {
-                    self.write_offset_hh_mm_ss(f, &utc_offset)
+                    self.write_offset_hh(f, &utc_offset)
                 }
             }
             Spec::TimeZoneName => {
