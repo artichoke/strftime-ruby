@@ -13,7 +13,7 @@ use bitflags::bitflags;
 
 use crate::{Error, Time};
 use assert::{assert_sorted, assert_sorted_elem_0, assert_to_ascii_uppercase};
-use utils::{Cursor, Lower, SizeLimiter, Upper};
+use utils::{Cursor, SizeLimiter};
 use week::{iso_8601_year_and_week_number, week_number, WeekStart};
 use write::Write;
 
@@ -309,7 +309,7 @@ impl Piece {
     }
 
     /// Format a string value.
-    fn format_string(&self, f: &mut SizeLimiter<'_>, s: impl fmt::Display) -> Result<(), Error> {
+    fn format_string(&self, f: &mut SizeLimiter<'_>, s: &str) -> Result<(), Error> {
         match self.width {
             None => write!(f, "{}", s),
             Some(width) => {
@@ -322,6 +322,19 @@ impl Piece {
                 }
             }
         }
+    }
+
+    /// Write padding separately.
+    fn write_padding(&self, f: &mut SizeLimiter<'_>, min_width: usize) -> Result<(), Error> {
+        if let Some(width) = self.width {
+            let n = width.saturating_sub(min_width);
+
+            match self.padding {
+                Padding::Zeros => write!(f, "{:0>n$}", "")?,
+                _ => write!(f, "{: >n$}", "")?,
+            };
+        }
+        Ok(())
     }
 
     /// Compute UTC offset parts for the `%z` specifier.
@@ -418,19 +431,6 @@ impl Piece {
         }
     }
 
-    /// Write padding for combination specifiers (`%c`, `%D`, `%x`, `%F`, `%v`, `%r`, `%R`, `%T`, `%X`).
-    fn write_padding(&self, f: &mut SizeLimiter<'_>, min_width: usize) -> Result<(), Error> {
-        if let Some(width) = self.width {
-            let n = width.saturating_sub(min_width);
-
-            match self.padding {
-                Padding::Zeros => write!(f, "{:0>n$}", "")?,
-                _ => write!(f, "{: >n$}", "")?,
-            };
-        }
-        Ok(())
-    }
-
     /// Format time using the formatting directive.
     #[allow(clippy::too_many_lines)]
     fn fmt(&self, f: &mut SizeLimiter<'_>, time: &impl Time) -> Result<(), Error> {
@@ -519,12 +519,22 @@ impl Piece {
             Spec::TimeZoneName => {
                 let tz_name = time.time_zone();
                 if !tz_name.is_empty() {
-                    if self.flags.contains(Flags::CHANGE_CASE) {
-                        self.format_string(f, Lower::new(tz_name.as_bytes()))?;
+                    assert!(tz_name.is_ascii());
+
+                    if !self.flags.contains(Flags::LEFT_PADDING) {
+                        self.write_padding(f, tz_name.len())?;
+                    }
+
+                    let convert: fn(&u8) -> u8 = if self.flags.contains(Flags::CHANGE_CASE) {
+                        u8::to_ascii_lowercase
                     } else if self.flags.contains(Flags::UPPER_CASE) {
-                        self.format_string(f, Upper::new(tz_name.as_bytes()))?;
+                        u8::to_ascii_uppercase
                     } else {
-                        self.format_string(f, tz_name)?;
+                        |&x| x
+                    };
+
+                    for x in tz_name.as_bytes() {
+                        f.write(&[convert(x)])?;
                     }
                 }
                 Ok(())

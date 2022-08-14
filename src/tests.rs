@@ -127,6 +127,7 @@ fn test_format() {
     check_format(&times[0], "'%10Z'", Ok("'       UTC'"));
     check_format(&times[1], "'%10Z'", Ok("'       UTC'"));
     check_format(&times[4], "'%10Z'", Ok("'       LMT'"));
+    check_format(&times[5], "'%^#10Z'", Ok("'       cet'"));
     check_format(&times[5], "'%-^#10Z'", Ok("'cet'"));
     check_format(&times[2], "'%010Z'", Ok("'00000+0000'"));
     check_format(&times[3], "'%010Z'", Ok("''"));

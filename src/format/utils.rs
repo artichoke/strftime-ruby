@@ -1,7 +1,5 @@
 //! Some useful types.
 
-use core::fmt;
-
 use super::write::Write;
 use crate::Error;
 
@@ -65,48 +63,6 @@ impl<'a> Cursor<'a> {
         let (result, remaining) = self.remaining.split_at(count);
         self.remaining = remaining;
         result
-    }
-}
-
-/// Wrapper struct for converting an ASCII buffer to uppercase.
-#[derive(Debug)]
-pub(crate) struct Upper<'a>(&'a [u8]);
-
-impl<'a> Upper<'a> {
-    /// Construct a new `Upper` wrapper.
-    pub(crate) fn new(buf: &'a [u8]) -> Self {
-        assert!(buf.is_ascii());
-        Self(buf)
-    }
-}
-
-impl fmt::Display for Upper<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for &x in self.0 {
-            fmt::Write::write_char(f, x.to_ascii_uppercase().into())?;
-        }
-        Ok(())
-    }
-}
-
-/// Wrapper struct for converting an ASCII buffer to lowercase.
-#[derive(Debug)]
-pub(crate) struct Lower<'a>(&'a [u8]);
-
-impl<'a> Lower<'a> {
-    /// Construct a new `Lower` wrapper.
-    pub(crate) fn new(buf: &'a [u8]) -> Self {
-        assert!(buf.is_ascii());
-        Self(buf)
-    }
-}
-
-impl fmt::Display for Lower<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for &x in self.0 {
-            fmt::Write::write_char(f, x.to_ascii_lowercase().into())?;
-        }
-        Ok(())
     }
 }
 
