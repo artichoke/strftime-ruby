@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![forbid(unsafe_code)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 #![warn(clippy::cargo)]
@@ -178,6 +179,9 @@ pub trait Time {
     /// Returns the name of the time zone as a string.
     fn time_zone(&self) -> &str;
 }
+
+// Check that the Time trait is object-safe
+const _: Option<&dyn Time> = None;
 
 /// Provides a buffered `strftime` implementation using a format string with arbitrary bytes.
 pub mod buffered {

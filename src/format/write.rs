@@ -55,13 +55,8 @@ pub(crate) trait Write {
 
         match fmt::write(&mut output, fmt_args) {
             Ok(()) => Ok(()),
-            Err(_) => {
-                if output.error.is_err() {
-                    output.error
-                } else {
-                    Err(Error::FmtError)
-                }
-            }
+            Err(_) if output.error.is_err() => output.error,
+            Err(_) => Err(Error::FmtError),
         }
     }
 }

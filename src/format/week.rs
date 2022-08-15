@@ -80,7 +80,7 @@ pub(crate) fn iso_8601_year_and_week_number(
     (year, week_number)
 }
 
-/// Check if a year is a leap year
+/// Check if a year is a leap year.
 fn is_leap_year(year: i64) -> bool {
     year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)
 }

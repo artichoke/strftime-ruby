@@ -23,13 +23,9 @@ impl<'a> Cursor<'a> {
 
     /// Returns the next byte.
     pub(crate) fn next(&mut self) -> Option<u8> {
-        match self.remaining {
-            [first, tail @ ..] => {
-                self.remaining = tail;
-                Some(*first)
-            }
-            _ => None,
-        }
+        let (&first, tail) = self.remaining.split_first()?;
+        self.remaining = tail;
+        Some(first)
     }
 
     /// Read bytes if the remaining data is prefixed by the provided tag.
