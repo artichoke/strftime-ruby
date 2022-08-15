@@ -6,7 +6,7 @@
 <br>
 [![Crate](https://img.shields.io/crates/v/strftime-ruby.svg)](https://crates.io/crates/strftime-ruby)
 [![API](https://docs.rs/strftime-ruby/badge.svg)](https://docs.rs/strftime-ruby)
-[![API trunk](https://img.shields.io/badge/docs-trunk-blue.svg)](https://artichoke.github.io/strftime-ruby/strftime-ruby/)
+[![API trunk](https://img.shields.io/badge/docs-trunk-blue.svg)](https://artichoke.github.io/strftime-ruby/strftime/)
 
 `strftime` parser and formatter. Used to implement [`Time#strftime`] from the
 Ruby Core library in [Artichoke Ruby][artichoke].
