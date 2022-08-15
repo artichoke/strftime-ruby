@@ -118,17 +118,21 @@ enum Padding {
 /// Formatting specifier.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum Spec {
-    /// `"%Y"`: Year with century if provided, zero-padded to at least 4 digits plus the possible negative sign.
+    /// `"%Y"`: Year with century if provided, zero-padded to at least 4 digits
+    /// plus the possible negative sign.
     Year4Digits,
-    /// `"%C"`: `Year / 100` using Euclidian division, zero-padded to at least 2 digits.
+    /// `"%C"`: `Year / 100` using Euclidian division, zero-padded to at least 2
+    /// digits.
     YearDiv100,
-    /// `"%y"`: `Year % 100` in `00..=99`, using Euclidian remainder, zero-padded to 2 digits.
+    /// `"%y"`: `Year % 100` in `00..=99`, using Euclidian remainder, zero-padded
+    /// to 2 digits.
     YearRem100,
     /// `"%m"`: Month of the year in `01..=12`, zero-padded to 2 digits.
     Month,
     /// `"%B"`: Locale independent full month name.
     MonthName,
-    /// `"%b"` and `"%h"`: Locale independent abbreviated month name, using the first 3 letters.
+    /// `"%b"` and `"%h"`: Locale independent abbreviated month name, using the
+    /// first 3 letters.
     MonthNameAbbr,
     /// `"%d"`: Day of the month in `01..=31`, zero-padded to 2 digits.
     MonthDayZero,
@@ -136,13 +140,17 @@ enum Spec {
     MonthDaySpace,
     /// `"%j"`: Day of the year in `001..=366`, zero-padded to 3 digits.
     YearDay,
-    /// `"%H"`: Hour of the day (24-hour clock) in `00..=23`, zero-padded to 2 digits.
+    /// `"%H"`: Hour of the day (24-hour clock) in `00..=23`, zero-padded to 2
+    /// digits.
     Hour24hZero,
-    /// `"%k"`: Hour of the day (24-hour clock) in ` 0..=23`, blank-padded to 2 digits.
+    /// `"%k"`: Hour of the day (24-hour clock) in ` 0..=23`, blank-padded to 2
+    /// digits.
     Hour24hSpace,
-    /// `"%I"`: Hour of the day (12-hour clock) in `01..=12`, zero-padded to 2 digits.
+    /// `"%I"`: Hour of the day (12-hour clock) in `01..=12`, zero-padded to 2
+    /// digits.
     Hour12hZero,
-    /// `"%l"`: Hour of the day (12-hour clock) in ` 1..=12`, blank-padded to 2 digits.
+    /// `"%l"`: Hour of the day (12-hour clock) in ` 1..=12`, blank-padded to 2
+    /// digits.
     Hour12hSpace,
     /// `"%P"`: Lowercase meridian indicator (`"am"` or `"pm"`).
     MeridianLower,
@@ -152,23 +160,30 @@ enum Spec {
     Minute,
     /// `"%S"`: Second of the minute in `00..=60`, zero-padded to 2 digits.
     Second,
-    /// `"%L"`: Troncated fractional seconds digits, with 3 digits by default. Number of digits is specified by the width field.
+    /// `"%L"`: Troncated fractional seconds digits, with 3 digits by default.
+    /// Number of digits is specified by the width field.
     MilliSecond,
-    /// `"%N"`: Troncated fractional seconds digits, with 9 digits by default. Number of digits is specified by the width field.
+    /// `"%N"`: Troncated fractional seconds digits, with 9 digits by default.
+    /// Number of digits is specified by the width field.
     FractionalSecond,
-    /// `"%z"`: Zero-padded signed time zone UTC hour and minute offsets (`+hhmm`).
+    /// `"%z"`: Zero-padded signed time zone UTC hour and minute offsets
+    /// (`+hhmm`).
     TimeZoneOffsetHourMinute,
-    /// `"%:z"`: Zero-padded signed time zone UTC hour and minute offsets with colons (`+hh:mm`).
+    /// `"%:z"`: Zero-padded signed time zone UTC hour and minute offsets with
+    /// colons (`+hh:mm`).
     TimeZoneOffsetHourMinuteColon,
-    /// `"%::z"`: Zero-padded signed time zone UTC hour, minute and second offsets with colons (`+hh:mm:ss`).
+    /// `"%::z"`: Zero-padded signed time zone UTC hour, minute and second
+    /// offsets with colons (`+hh:mm:ss`).
     TimeZoneOffsetHourMinuteSecondColon,
-    /// `"%:::z"`: Zero-padded signed time zone UTC hour offset, with optional minute and second offsets with colons (`+hh[:mm[:ss]]`).
+    /// `"%:::z"`: Zero-padded signed time zone UTC hour offset, with optional
+    /// minute and second offsets with colons (`+hh[:mm[:ss]]`).
     TimeZoneOffsetColonMinimal,
     /// `"%Z"`: Platform-dependent abbreviated time zone name.
     TimeZoneName,
     /// `"%A"`: Locale independent full weekday name.
     WeekDayName,
-    /// `"%a"`: Locale independent abbreviated weekday name, using the first 3 letters.
+    /// `"%a"`: Locale independent abbreviated weekday name, using the first 3
+    /// letters.
     WeekDayNameAbbr,
     /// `"%u"`: Day of the week from Monday in `1..=7`, zero-padded to 1 digit.
     WeekDayFrom1,
@@ -180,11 +195,14 @@ enum Spec {
     YearIso8601Rem100,
     /// `"%V"`: ISO 8601 week number in `01..=53`, zero-padded to 2 digits.
     WeekNumberIso8601,
-    /// `"%U"`: Week number from Sunday in `00..=53`, zero-padded to 2 digits. The week `1` starts with the first Sunday of the year.
+    /// `"%U"`: Week number from Sunday in `00..=53`, zero-padded to 2 digits.
+    /// The week `1` starts with the first Sunday of the year.
     WeekNumberFromSunday,
-    /// `"%W"`: Week number from Monday in `00..=53`, zero-padded to 2 digits. The week `1` starts with the first Monday of the year.
+    /// `"%W"`: Week number from Monday in `00..=53`, zero-padded to 2 digits.
+    /// The week `1` starts with the first Monday of the year.
     WeekNumberFromMonday,
-    /// `"%s"`: Number of seconds since `1970-01-01 00:00:00 UTC`, zero-padded to at least 1 digit.
+    /// `"%s"`: Number of seconds since `1970-01-01 00:00:00 UTC`, zero-padded
+    /// to at least 1 digit.
     SecondsSinceEpoch,
     /// `"%n"`: Newline character `'\n'`.
     Newline,
@@ -709,7 +727,8 @@ impl<'t, 'f, T: Time> TimeFormatter<'t, 'f, T> {
             return Ok(());
         }
 
-        // Use a size limiter to limit the maximum size of the resulting formatted string
+        // Use a size limiter to limit the maximum size of the resulting
+        // formatted string
         let size_limit = self.format.len().saturating_mul(512 * 1024);
         let mut f = SizeLimiter::new(buf, size_limit);
 

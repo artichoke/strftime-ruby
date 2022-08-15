@@ -26,7 +26,8 @@ pub(crate) fn week_number(week_day: i64, year_day_1: i64, week_start: WeekStart)
 /// Compute the ISO 8601 week-based year and week number.
 ///
 /// The first week of `YYYY` starts with a Monday and includes `YYYY-01-04`.
-/// The days in the year before the first week are in the last week of the previous year.
+/// The days in the year before the first week are in the last week of the
+/// previous year.
 ///
 /// ## Inputs
 ///

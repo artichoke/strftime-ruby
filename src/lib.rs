@@ -21,12 +21,14 @@
 #![cfg_attr(docsrs, feature(doc_alias))]
 
 /*!
-This crate provides a Ruby 3.1.2 compatible `strftime` function, which formats time according to the directives in the given format string.
+This crate provides a Ruby 3.1.2 compatible `strftime` function, which formats
+time according to the directives in the given format string.
 
-The directives begin with a percent `%` character. Any text not listed as a directive will be passed through to the output string.
+The directives begin with a percent `%` character. Any text not listed as a
+directive will be passed through to the output string.
 
-Each directive consists of a percent `%` character, zero or more flags, optional minimum field width,
-optional modifier and a conversion specifier as follows:
+Each directive consists of a percent `%` character, zero or more flags, optional
+minimum field width, optional modifier and a conversion specifier as follows:
 
 ```text
 %<flags><width><modifier><conversion>
@@ -100,8 +102,9 @@ The modifiers are `E` and `O`. They are ignored.
 |    `%R`    | `00:23`       | 24-hour time without seconds, equivalent to `"%H:%M"`.                                                                |
 | `%T`, `%X` | `00:23:45`    | 24-hour time, equivalent to `"%H:%M:%S"`.                                                                             |
 
-[^1]: `%G`, `%g`, `%V`: Week 1 of ISO 8601 is the first week with at least 4 days in that year.
-The days before the first week are in the last week of the previous year.
+[^1]: `%G`, `%g`, `%V`: Week 1 of ISO 8601 is the first week with at least 4
+days in that year. The days before the first week are in the last week of the
+previous year.
 */
 
 #![doc(html_root_url = "https://docs.rs/strftime-ruby/0.1.0")]
@@ -125,7 +128,8 @@ pub enum Error {
     InvalidFormatString,
     /// Formatted string is too large and could cause an out-of-memory error.
     FormattedStringTooLarge,
-    /// Provided buffer for the [`buffered::strftime`] function is too small for the formatted string.
+    /// Provided buffer for the [`buffered::strftime`] function is too small for
+    /// the formatted string.
     ///
     /// This corresponds to the [`std::io::ErrorKind::WriteZero`] variant.
     ///
@@ -170,7 +174,8 @@ pub trait Time {
     fn second(&self) -> u8;
     /// Returns the number of nanoseconds in `0..=999_999_999` for _time_.
     fn nanoseconds(&self) -> u32;
-    /// Returns an integer representing the day of the week in `0..=6`, with `Sunday == 0`.
+    /// Returns an integer representing the day of the week in `0..=6`, with
+    /// `Sunday == 0`.
     fn day_of_week(&self) -> u8;
     /// Returns an integer representing the day of the year in `1..=366`.
     fn day_of_year(&self) -> u16;
@@ -187,7 +192,8 @@ pub trait Time {
 // Check that the Time trait is object-safe
 const _: Option<&dyn Time> = None;
 
-/// Provides a buffered `strftime` implementation using a format string with arbitrary bytes.
+/// Provides a buffered `strftime` implementation using a format string with
+/// arbitrary bytes.
 pub mod buffered {
     use super::{Error, Time};
     use crate::format::TimeFormatter;
@@ -195,7 +201,8 @@ pub mod buffered {
     /// Format a _time_ implementation with the specified format byte string,
     /// writing in the provided buffer and returning the written subslice.
     ///
-    /// See the [crate-level documentation](crate) for a complete description of possible format specifiers.
+    /// See the [crate-level documentation](crate) for a complete description of
+    /// possible format specifiers.
     ///
     /// # Examples
     ///
@@ -244,7 +251,8 @@ pub mod bytes {
 
     /// Format a _time_ implementation with the specified format byte string.
     ///
-    /// See the [crate-level documentation](crate) for a complete description of possible format specifiers.
+    /// See the [crate-level documentation](crate) for a complete description of
+    /// possible format specifiers.
     ///
     /// # Examples
     ///
@@ -283,7 +291,8 @@ pub mod string {
 
     /// Format a _time_ implementation with the specified UTF-8 format string.
     ///
-    /// See the [crate-level documentation](crate) for a complete description of possible format specifiers.
+    /// See the [crate-level documentation](crate) for a complete description of
+    /// possible format specifiers.
     ///
     /// # Examples
     ///
