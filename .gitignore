@@ -96,3 +96,8 @@ tags
 [._]*.un~
 
 # End of https://www.toptal.com/developers/gitignore/api/vim,rust,ruby
+
+# Overrides
+
+# Cargo and other Rust tool configuration lives in a top-level `.config/` directory.
+!/.config/
