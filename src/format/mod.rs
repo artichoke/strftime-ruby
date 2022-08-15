@@ -105,10 +105,9 @@ impl Flags {
 }
 
 /// Padding method.
-#[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum Padding {
     /// Left padding.
-    #[default]
     Left,
     /// Padding with spaces.
     Spaces,
@@ -743,7 +742,7 @@ impl<'t, 'f, T: Time> TimeFormatter<'t, 'f, T> {
     /// Parse a formatting directive.
     fn parse_spec(cursor: &mut Cursor<'_>) -> Result<Option<Piece>, Error> {
         // Parse flags
-        let mut padding = Padding::default();
+        let mut padding = Padding::Left;
         let mut flags = Flags::empty();
 
         loop {
