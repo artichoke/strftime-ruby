@@ -262,13 +262,13 @@ impl Piece {
         default_width: usize,
     ) -> Result<(), Error> {
         if self.flags.contains(Flags::LEFT_PADDING) {
-            write!(f, "{}", value)
+            write!(f, "{value}")
         } else if self.padding == Padding::Spaces {
             let width = self.width.unwrap_or(default_width);
-            write!(f, "{: >width$}", value)
+            write!(f, "{value: >width$}")
         } else {
             let width = self.width.unwrap_or(default_width);
-            write!(f, "{:0width$}", value)
+            write!(f, "{value:0width$}")
         }
     }
 
@@ -280,13 +280,13 @@ impl Piece {
         default_width: usize,
     ) -> Result<(), Error> {
         if self.flags.contains(Flags::LEFT_PADDING) {
-            write!(f, "{}", value)
+            write!(f, "{value}")
         } else if self.padding == Padding::Zeros {
             let width = self.width.unwrap_or(default_width);
-            write!(f, "{:0width$}", value)
+            write!(f, "{value:0width$}")
         } else {
             let width = self.width.unwrap_or(default_width);
-            write!(f, "{: >width$}", value)
+            write!(f, "{value: >width$}")
         }
     }
 
@@ -301,23 +301,23 @@ impl Piece {
 
         if width <= 9 {
             let value = nanoseconds / 10u32.pow(9 - width as u32);
-            write!(f, "{:0n$}", value, n = width)
+            write!(f, "{value:0n$}", n = width)
         } else {
-            write!(f, "{:09}{:0n$}", nanoseconds, 0, n = width - 9)
+            write!(f, "{nanoseconds:09}{:0n$}", 0, n = width - 9)
         }
     }
 
     /// Format a string value.
     fn format_string(&self, f: &mut SizeLimiter<'_>, s: &str) -> Result<(), Error> {
         match self.width {
-            None => write!(f, "{}", s),
+            None => write!(f, "{s}"),
             Some(width) => {
                 if self.flags.contains(Flags::LEFT_PADDING) {
-                    write!(f, "{}", s)
+                    write!(f, "{s}")
                 } else if self.padding == Padding::Zeros {
-                    write!(f, "{:0>width$}", s)
+                    write!(f, "{s:0>width$}")
                 } else {
-                    write!(f, "{: >width$}", s)
+                    write!(f, "{s: >width$}")
                 }
             }
         }
@@ -372,11 +372,12 @@ impl Piece {
         f: &mut SizeLimiter<'_>,
         utc_offset: &UtcOffset,
     ) -> Result<(), Error> {
+        let hour = utc_offset.hour;
         let n = self.hour_padding("+hh".len());
 
         match self.padding {
-            Padding::Spaces => write!(f, "{: >+n$.0}", utc_offset.hour),
-            _ => write!(f, "{:+0n$.0}", utc_offset.hour),
+            Padding::Spaces => write!(f, "{hour: >+n$.0}"),
+            _ => write!(f, "{hour:+0n$.0}"),
         }
     }
 
@@ -386,11 +387,12 @@ impl Piece {
         f: &mut SizeLimiter<'_>,
         utc_offset: &UtcOffset,
     ) -> Result<(), Error> {
+        let UtcOffset { hour, minute, .. } = utc_offset;
         let n = self.hour_padding("+hhmm".len());
 
         match self.padding {
-            Padding::Spaces => write!(f, "{: >+n$.0}{:02}", utc_offset.hour, utc_offset.minute),
-            _ => write!(f, "{:+0n$.0}{:02}", utc_offset.hour, utc_offset.minute),
+            Padding::Spaces => write!(f, "{hour: >+n$.0}{minute:02}"),
+            _ => write!(f, "{hour:+0n$.0}{minute:02}"),
         }
     }
 
@@ -400,11 +402,12 @@ impl Piece {
         f: &mut SizeLimiter<'_>,
         utc_offset: &UtcOffset,
     ) -> Result<(), Error> {
+        let UtcOffset { hour, minute, .. } = utc_offset;
         let n = self.hour_padding("+hh:mm".len());
 
         match self.padding {
-            Padding::Spaces => write!(f, "{: >+n$.0}:{:02}", utc_offset.hour, utc_offset.minute),
-            _ => write!(f, "{:+0n$.0}:{:02}", utc_offset.hour, utc_offset.minute),
+            Padding::Spaces => write!(f, "{hour: >+n$.0}:{minute:02}"),
+            _ => write!(f, "{hour:+0n$.0}:{minute:02}"),
         }
     }
 
@@ -414,19 +417,17 @@ impl Piece {
         f: &mut SizeLimiter<'_>,
         utc_offset: &UtcOffset,
     ) -> Result<(), Error> {
+        let UtcOffset {
+            hour,
+            minute,
+            second,
+        } = utc_offset;
+
         let n = self.hour_padding("+hh:mm:ss".len());
 
         match self.padding {
-            Padding::Spaces => write!(
-                f,
-                "{: >+n$.0}:{:02}:{:02}",
-                utc_offset.hour, utc_offset.minute, utc_offset.second
-            ),
-            _ => write!(
-                f,
-                "{:+0n$.0}:{:02}:{:02}",
-                utc_offset.hour, utc_offset.minute, utc_offset.second
-            ),
+            Padding::Spaces => write!(f, "{hour: >+n$.0}:{minute:02}:{second:02}"),
+            _ => write!(f, "{hour:+0n$.0}:{minute:02}:{second:02}"),
         }
     }
 
@@ -624,11 +625,9 @@ impl Piece {
                 let day = time.day();
                 let (hour, minute, second) = (time.hour(), time.minute(), time.second());
 
-                write!(
-                    f,
-                    "{} {} {: >2} {:02}:{:02}:{:02} {:0default_year_width$}",
-                    week_day_name, month_name, day, hour, minute, second, year
-                )
+                write!(f, "{week_day_name} {month_name} ")?;
+                write!(f, "{day: >2} {hour:02}:{minute:02}:{second:02} ")?;
+                write!(f, "{year:0default_year_width$}")
             }
             Spec::CombinationDate => {
                 self.write_padding(f, "mm/dd/yy".len())?;
@@ -637,7 +636,7 @@ impl Piece {
                 let month = time.month();
                 let day = time.day();
 
-                write!(f, "{:02}/{:02}/{:02}", month, day, year)
+                write!(f, "{month:02}/{day:02}/{year:02}")
             }
             Spec::CombinationIso8601 => {
                 const MIN_WIDTH_NO_YEAR: usize = "-mm-dd".len();
@@ -650,7 +649,7 @@ impl Piece {
                 let month = time.month();
                 let day = time.day();
 
-                write!(f, "{:0default_year_width$}-{:02}-{:02}", year, month, day)
+                write!(f, "{year:0default_year_width$}-{month:02}-{day:02}")
             }
             Spec::CombinationVmsDate => {
                 let year = time.year();
@@ -659,7 +658,7 @@ impl Piece {
                 let month_name = &MONTHS_UPPER[(time.month() - 1) as usize][..3];
                 let day = time.day();
 
-                write!(f, "{: >2}-{}-{:04}", day, month_name, year)
+                write!(f, "{day: >2}-{month_name}-{year:04}")
             }
             Spec::CombinationTime12h => {
                 self.write_padding(f, "HH:MM:SS PM".len())?;
@@ -670,16 +669,17 @@ impl Piece {
                 let (minute, second) = (time.minute(), time.second());
                 let meridian = if time.hour() < 12 { "AM" } else { "PM" };
 
-                write!(f, "{:02}:{:02}:{:02} {}", hour, minute, second, meridian)
+                write!(f, "{hour:02}:{minute:02}:{second:02} {meridian}")
             }
             Spec::CombinationHourMinute24h => {
                 self.write_padding(f, "HH:MM".len())?;
-                write!(f, "{:02}:{:02}", time.hour(), time.minute())
+                let (hour, minute) = (time.hour(), time.minute());
+                write!(f, "{hour:02}:{minute:02}")
             }
             Spec::CombinationTime24h => {
                 self.write_padding(f, "HH:MM:SS".len())?;
                 let (hour, minute, second) = (time.hour(), time.minute(), time.second());
-                write!(f, "{:02}:{:02}:{:02}", hour, minute, second)
+                write!(f, "{hour:02}:{minute:02}:{second:02}")
             }
         }
     }
