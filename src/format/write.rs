@@ -1,5 +1,5 @@
-//! This module is a copy of the [`std::io::Write`] implementation,
-//! in order to use it in a no-std context.
+//! This module is a copy of the [`std::io::Write`] implementation, in order to
+//! use it in a no-std context.
 //!
 //! [`std::io::Write`]: <https://doc.rust-lang.org/std/io/trait.Write.html>
 
@@ -46,7 +46,8 @@ pub(crate) trait Write {
         Ok(())
     }
 
-    /// Writes a formatted string into this writer, returning any error encountered.
+    /// Writes a formatted string into this writer, returning any error
+    /// encountered.
     fn write_fmt(&mut self, fmt_args: fmt::Arguments<'_>) -> Result<(), Error> {
         let mut output = Adapter {
             inner: self,
@@ -61,7 +62,8 @@ pub(crate) trait Write {
     }
 }
 
-/// Write is implemented for `&mut [u8]` by copying into the slice, overwriting its data.
+/// Write is implemented for `&mut [u8]` by copying into the slice, overwriting
+/// its data.
 impl Write for &mut [u8] {
     fn write(&mut self, data: &[u8]) -> Result<usize, Error> {
         let size = data.len().min(self.len());
@@ -72,7 +74,8 @@ impl Write for &mut [u8] {
     }
 }
 
-/// Write is implemented for `Vec<u8>` by appending to the vector, growing as needed.
+/// Write is implemented for `Vec<u8>` by appending to the vector, growing as
+/// needed.
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 impl Write for Vec<u8> {

@@ -20,89 +20,91 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, feature(doc_alias))]
 
-/*!
-This crate provides a Ruby 3.1.2 compatible `strftime` function, which formats time according to the directives in the given format string.
-
-The directives begin with a percent `%` character. Any text not listed as a directive will be passed through to the output string.
-
-Each directive consists of a percent `%` character, zero or more flags, optional minimum field width,
-optional modifier and a conversion specifier as follows:
-
-```text
-%<flags><width><modifier><conversion>
-```
-
-## Flags
-
-| Flag | Description                                                                            |
-|------|----------------------------------------------------------------------------------------|
-|  `-` | Use left padding, ignoring width and removing all other padding options in most cases. |
-|  `_` | Use spaces for padding.                                                                |
-|  `0` | Use zeros for padding.                                                                 |
-|  `^` | Convert the resulting string to uppercase.                                             |
-|  `#` | Change case of the resulting string.                                                   |
-
-
-## Width
-
-The minimum field width specifies the minimum width.
-
-## Modifiers
-
-The modifiers are `E` and `O`. They are ignored.
-
-## Specifiers
-
-| Specifier  | Example       | Description                                                                                                           |
-|------------|---------------|-----------------------------------------------------------------------------------------------------------------------|
-|    `%Y`    | `-2001`       | Year with century if provided, zero-padded to at least 4 digits plus the possible negative sign.                      |
-|    `%C`    | `-21`         | `Year / 100` using Euclidian division, zero-padded to at least 2 digits.                                              |
-|    `%y`    | `99`          | `Year % 100` in `00..=99`, using Euclidian remainder, zero-padded to 2 digits.                                        |
-|    `%m`    | `01`          | Month of the year in `01..=12`, zero-padded to 2 digits.                                                              |
-|    `%B`    | `July`        | Locale independent full month name.                                                                                   |
-| `%b`, `%h` | `Jul`         | Locale independent abbreviated month name, using the first 3 letters.                                                 |
-|    `%d`    | `01`          | Day of the month in `01..=31`, zero-padded to 2 digits.                                                               |
-|    `%e`    | ` 1`          | Day of the month in ` 1..=31`, blank-padded to 2 digits.                                                              |
-|    `%j`    | `001`         | Day of the year in `001..=366`, zero-padded to 3 digits.                                                              |
-|    `%H`    | `00`          | Hour of the day (24-hour clock) in `00..=23`, zero-padded to 2 digits.                                                |
-|    `%k`    | ` 0`          | Hour of the day (24-hour clock) in ` 0..=23`, blank-padded to 2 digits.                                               |
-|    `%I`    | `01`          | Hour of the day (12-hour clock) in `01..=12`, zero-padded to 2 digits.                                                |
-|    `%l`    | ` 1`          | Hour of the day (12-hour clock) in ` 1..=12`, blank-padded to 2 digits.                                               |
-|    `%P`    | `am`          | Lowercase meridian indicator (`"am"` or `"pm"`).                                                                      |
-|    `%p`    | `AM`          | Uppercase meridian indicator (`"AM"` or `"PM"`).                                                                      |
-|    `%M`    | `00`          | Minute of the hour in `00..=59`, zero-padded to 2 digits.                                                             |
-|    `%S`    | `00`          | Second of the minute in `00..=60`, zero-padded to 2 digits.                                                           |
-|    `%L`    | `123`         | Troncated fractional seconds digits, with 3 digits by default. Number of digits is specified by the width field.      |
-|    `%N`    | `123456789`   | Troncated fractional seconds digits, with 9 digits by default. Number of digits is specified by the width field.      |
-|    `%z`    | `+0200`       | Zero-padded signed time zone UTC hour and minute offsets (`+hhmm`).                                                   |
-|    `%:z`   | `+02:00`      | Zero-padded signed time zone UTC hour and minute offsets with colons (`+hh:mm`).                                      |
-|    `%::z`  | `+02:00:00`   | Zero-padded signed time zone UTC hour, minute and second offsets with colons (`+hh:mm:ss`).                           |
-|    `%:::z` | `+02`         | Zero-padded signed time zone UTC hour offset, with optional minute and second offsets with colons (`+hh[:mm[:ss]]`).  |
-|    `%Z`    | `CEST`        | Platform-dependent abbreviated time zone name.                                                                        |
-|    `%A`    | `Sunday`      | Locale independent full weekday name.                                                                                 |
-|    `%a`    | `Sun`         | Locale independent abbreviated weekday name, using the first 3 letters.                                               |
-|    `%u`    | `1`           | Day of the week from Monday in `1..=7`, zero-padded to 1 digit.                                                       |
-|    `%w`    | `0`           | Day of the week from Sunday in `0..=6`, zero-padded to 1 digit.                                                       |
-|    `%G`    | `-2001`       | Same as `%Y`, but using the ISO 8601 week-based year. [^1]                                                            |
-|    `%g`    | `99`          | Same as `%y`, but using the ISO 8601 week-based year. [^1]                                                            |
-|    `%V`    | `01`          | ISO 8601 week number in `01..=53`, zero-padded to 2 digits. [^1]                                                      |
-|    `%U`    | `00`          | Week number from Sunday in `00..=53`, zero-padded to 2 digits. The week `1` starts with the first Sunday of the year. |
-|    `%W`    | `00`          | Week number from Monday in `00..=53`, zero-padded to 2 digits. The week `1` starts with the first Monday of the year. |
-|    `%s`    | `86400`       | Number of seconds since `1970-01-01 00:00:00 UTC`, zero-padded to at least 1 digit.                                   |
-|    `%n`    | `\n`          | Newline character `'\n'`.                                                                                             |
-|    `%t`    | `\t`          | Tab character `'\t'`.                                                                                                 |
-|    `%%`    | `%`           | Literal `'%'` character.                                                                                              |
-|    `%c`    | `Sun Jul  8 00:23:45 2001` | Date and time, equivalent to `"%a %b %e %H:%M:%S %Y"`.                                                   |
-| `%D`, `%x` | `07/08/01`    | Date, equivalent to `"%m/%d/%y"`.                                                                                     |
-|    `%F`    | `2001-07-08`  | ISO 8601 date, equivalent to `"%Y-%m-%d"`.                                                                            |
-|    `%v`    | ` 8-JUL-2001` | VMS date, equivalent to `"%e-%^b-%4Y"`.                                                                               |
-|    `%r`    | `12:23:45 AM` | 12-hour time, equivalent to `"%I:%M:%S %p"`.                                                                          |
-|    `%R`    | `00:23`       | 24-hour time without seconds, equivalent to `"%H:%M"`.                                                                |
-| `%T`, `%X` | `00:23:45`    | 24-hour time, equivalent to `"%H:%M:%S"`.                                                                             |
-
-[^1]: `%G`, `%g`, `%V`: Week 1 of ISO 8601 is the first week with at least 4 days in that year.
-The days before the first week are in the last week of the previous year.
-*/
+//! This crate provides a Ruby 3.1.2 compatible `strftime` function, which
+//! formats time according to the directives in the given format string.
+//!
+//! The directives begin with a percent `%` character. Any text not listed as a
+//! directive will be passed through to the output string.
+//!
+//! Each directive consists of a percent `%` character, zero or more flags,
+//! optional minimum field width, optional modifier and a conversion specifier
+//! as follows:
+//!
+//! ```text
+//! %<flags><width><modifier><conversion>
+//! ```
+//!
+//! ## Flags
+//!
+//! | Flag | Description                                                                            |
+//! |------|----------------------------------------------------------------------------------------|
+//! |  `-` | Use left padding, ignoring width and removing all other padding options in most cases. |
+//! |  `_` | Use spaces for padding.                                                                |
+//! |  `0` | Use zeros for padding.                                                                 |
+//! |  `^` | Convert the resulting string to uppercase.                                             |
+//! |  `#` | Change case of the resulting string.                                                   |
+//!
+//!
+//! ## Width
+//!
+//! The minimum field width specifies the minimum width.
+//!
+//! ## Modifiers
+//!
+//! The modifiers are `E` and `O`. They are ignored.
+//!
+//! ## Specifiers
+//!
+//! | Specifier  | Example       | Description                                                                                                           |
+//! |------------|---------------|-----------------------------------------------------------------------------------------------------------------------|
+//! |    `%Y`    | `-2001`       | Year with century if provided, zero-padded to at least 4 digits plus the possible negative sign.                      |
+//! |    `%C`    | `-21`         | `Year / 100` using Euclidean division, zero-padded to at least 2 digits.                                              |
+//! |    `%y`    | `99`          | `Year % 100` in `00..=99`, using Euclidean remainder, zero-padded to 2 digits.                                        |
+//! |    `%m`    | `01`          | Month of the year in `01..=12`, zero-padded to 2 digits.                                                              |
+//! |    `%B`    | `July`        | Locale independent full month name.                                                                                   |
+//! | `%b`, `%h` | `Jul`         | Locale independent abbreviated month name, using the first 3 letters.                                                 |
+//! |    `%d`    | `01`          | Day of the month in `01..=31`, zero-padded to 2 digits.                                                               |
+//! |    `%e`    | ` 1`          | Day of the month in ` 1..=31`, blank-padded to 2 digits.                                                              |
+//! |    `%j`    | `001`         | Day of the year in `001..=366`, zero-padded to 3 digits.                                                              |
+//! |    `%H`    | `00`          | Hour of the day (24-hour clock) in `00..=23`, zero-padded to 2 digits.                                                |
+//! |    `%k`    | ` 0`          | Hour of the day (24-hour clock) in ` 0..=23`, blank-padded to 2 digits.                                               |
+//! |    `%I`    | `01`          | Hour of the day (12-hour clock) in `01..=12`, zero-padded to 2 digits.                                                |
+//! |    `%l`    | ` 1`          | Hour of the day (12-hour clock) in ` 1..=12`, blank-padded to 2 digits.                                               |
+//! |    `%P`    | `am`          | Lowercase meridian indicator (`"am"` or `"pm"`).                                                                      |
+//! |    `%p`    | `AM`          | Uppercase meridian indicator (`"AM"` or `"PM"`).                                                                      |
+//! |    `%M`    | `00`          | Minute of the hour in `00..=59`, zero-padded to 2 digits.                                                             |
+//! |    `%S`    | `00`          | Second of the minute in `00..=60`, zero-padded to 2 digits.                                                           |
+//! |    `%L`    | `123`         | Truncated fractional seconds digits, with 3 digits by default. Number of digits is specified by the width field.      |
+//! |    `%N`    | `123456789`   | Truncated fractional seconds digits, with 9 digits by default. Number of digits is specified by the width field.      |
+//! |    `%z`    | `+0200`       | Zero-padded signed time zone UTC hour and minute offsets (`+hhmm`).                                                   |
+//! |    `%:z`   | `+02:00`      | Zero-padded signed time zone UTC hour and minute offsets with colons (`+hh:mm`).                                      |
+//! |    `%::z`  | `+02:00:00`   | Zero-padded signed time zone UTC hour, minute and second offsets with colons (`+hh:mm:ss`).                           |
+//! |    `%:::z` | `+02`         | Zero-padded signed time zone UTC hour offset, with optional minute and second offsets with colons (`+hh[:mm[:ss]]`).  |
+//! |    `%Z`    | `CEST`        | Platform-dependent abbreviated time zone name.                                                                        |
+//! |    `%A`    | `Sunday`      | Locale independent full weekday name.                                                                                 |
+//! |    `%a`    | `Sun`         | Locale independent abbreviated weekday name, using the first 3 letters.                                               |
+//! |    `%u`    | `1`           | Day of the week from Monday in `1..=7`, zero-padded to 1 digit.                                                       |
+//! |    `%w`    | `0`           | Day of the week from Sunday in `0..=6`, zero-padded to 1 digit.                                                       |
+//! |    `%G`    | `-2001`       | Same as `%Y`, but using the ISO 8601 week-based year. [^1]                                                            |
+//! |    `%g`    | `99`          | Same as `%y`, but using the ISO 8601 week-based year. [^1]                                                            |
+//! |    `%V`    | `01`          | ISO 8601 week number in `01..=53`, zero-padded to 2 digits. [^1]                                                      |
+//! |    `%U`    | `00`          | Week number from Sunday in `00..=53`, zero-padded to 2 digits. The week `1` starts with the first Sunday of the year. |
+//! |    `%W`    | `00`          | Week number from Monday in `00..=53`, zero-padded to 2 digits. The week `1` starts with the first Monday of the year. |
+//! |    `%s`    | `86400`       | Number of seconds since `1970-01-01 00:00:00 UTC`, zero-padded to at least 1 digit.                                   |
+//! |    `%n`    | `\n`          | Newline character `'\n'`.                                                                                             |
+//! |    `%t`    | `\t`          | Tab character `'\t'`.                                                                                                 |
+//! |    `%%`    | `%`           | Literal `'%'` character.                                                                                              |
+//! |    `%c`    | `Sun Jul  8 00:23:45 2001` | Date and time, equivalent to `"%a %b %e %H:%M:%S %Y"`.                                                   |
+//! | `%D`, `%x` | `07/08/01`    | Date, equivalent to `"%m/%d/%y"`.                                                                                     |
+//! |    `%F`    | `2001-07-08`  | ISO 8601 date, equivalent to `"%Y-%m-%d"`.                                                                            |
+//! |    `%v`    | ` 8-JUL-2001` | VMS date, equivalent to `"%e-%^b-%4Y"`.                                                                               |
+//! |    `%r`    | `12:23:45 AM` | 12-hour time, equivalent to `"%I:%M:%S %p"`.                                                                          |
+//! |    `%R`    | `00:23`       | 24-hour time without seconds, equivalent to `"%H:%M"`.                                                                |
+//! | `%T`, `%X` | `00:23:45`    | 24-hour time, equivalent to `"%H:%M:%S"`.                                                                             |
+//!
+//! [^1]: `%G`, `%g`, `%V`: Week 1 of ISO 8601 is the first week with at least 4
+//! days in that year. The days before the first week are in the last week of
+//! the previous year.
 
 #![doc(html_root_url = "https://docs.rs/strftime-ruby/0.1.0")]
 
@@ -125,7 +127,8 @@ pub enum Error {
     InvalidFormatString,
     /// Formatted string is too large and could cause an out-of-memory error.
     FormattedStringTooLarge,
-    /// Provided buffer for the [`buffered::strftime`] function is too small for the formatted string.
+    /// Provided buffer for the [`buffered::strftime`] function is too small for
+    /// the formatted string.
     ///
     /// This corresponds to the [`std::io::ErrorKind::WriteZero`] variant.
     ///
@@ -170,7 +173,8 @@ pub trait Time {
     fn second(&self) -> u8;
     /// Returns the number of nanoseconds in `0..=999_999_999` for _time_.
     fn nanoseconds(&self) -> u32;
-    /// Returns an integer representing the day of the week in `0..=6`, with `Sunday == 0`.
+    /// Returns an integer representing the day of the week in `0..=6`, with
+    /// `Sunday == 0`.
     fn day_of_week(&self) -> u8;
     /// Returns an integer representing the day of the year in `1..=366`.
     fn day_of_year(&self) -> u16;
@@ -187,7 +191,8 @@ pub trait Time {
 // Check that the Time trait is object-safe
 const _: Option<&dyn Time> = None;
 
-/// Provides a buffered `strftime` implementation using a format string with arbitrary bytes.
+/// Provides a buffered `strftime` implementation using a format string with
+/// arbitrary bytes.
 pub mod buffered {
     use super::{Error, Time};
     use crate::format::TimeFormatter;
@@ -195,7 +200,8 @@ pub mod buffered {
     /// Format a _time_ implementation with the specified format byte string,
     /// writing in the provided buffer and returning the written subslice.
     ///
-    /// See the [crate-level documentation](crate) for a complete description of possible format specifiers.
+    /// See the [crate-level documentation](crate) for a complete description of
+    /// possible format specifiers.
     ///
     /// # Examples
     ///
@@ -244,7 +250,8 @@ pub mod bytes {
 
     /// Format a _time_ implementation with the specified format byte string.
     ///
-    /// See the [crate-level documentation](crate) for a complete description of possible format specifiers.
+    /// See the [crate-level documentation](crate) for a complete description of
+    /// possible format specifiers.
     ///
     /// # Examples
     ///
@@ -283,7 +290,8 @@ pub mod string {
 
     /// Format a _time_ implementation with the specified UTF-8 format string.
     ///
-    /// See the [crate-level documentation](crate) for a complete description of possible format specifiers.
+    /// See the [crate-level documentation](crate) for a complete description of
+    /// possible format specifiers.
     ///
     /// # Examples
     ///
