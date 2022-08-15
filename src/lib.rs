@@ -20,14 +20,15 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(docsrs, feature(doc_alias))]
 
-//! This crate provides a Ruby 3.1.2 compatible `strftime` function, which formats
-//! time according to the directives in the given format string.
+//! This crate provides a Ruby 3.1.2 compatible `strftime` function, which
+//! formats time according to the directives in the given format string.
 //!
 //! The directives begin with a percent `%` character. Any text not listed as a
 //! directive will be passed through to the output string.
 //!
-//! Each directive consists of a percent `%` character, zero or more flags, optional
-//! minimum field width, optional modifier and a conversion specifier as follows:
+//! Each directive consists of a percent `%` character, zero or more flags,
+//! optional minimum field width, optional modifier and a conversion specifier
+//! as follows:
 //!
 //! ```text
 //! %<flags><width><modifier><conversion>
@@ -102,8 +103,8 @@
 //! | `%T`, `%X` | `00:23:45`    | 24-hour time, equivalent to `"%H:%M:%S"`.                                                                             |
 //!
 //! [^1]: `%G`, `%g`, `%V`: Week 1 of ISO 8601 is the first week with at least 4
-//! days in that year. The days before the first week are in the last week of the
-//! previous year.
+//! days in that year. The days before the first week are in the last week of
+//! the previous year.
 
 #![doc(html_root_url = "https://docs.rs/strftime-ruby/0.1.0")]
 
