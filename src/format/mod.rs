@@ -795,7 +795,9 @@ impl<'t, 'f, T: Time> TimeFormatter<'t, 'f, T> {
             _ => return Ok(None),
         };
 
-        // Ignore POSIX locale extensions (https://github.com/ruby/ruby/blob/4491bb740a9506d76391ac44bb2fe6e483fec952/strftime.c#L713-L722)
+        // Ignore POSIX locale extensions per MRI 3.1.2:
+        //
+        // <https://github.com/ruby/ruby/blob/v3_1_2/strftime.c#L713-L722>
         if let Some(&[ext, spec]) = cursor.remaining().get(..2) {
             const EXT_E_SPECS: &[u8] = assert_sorted(b"CXYcxy");
             const EXT_O_SPECS: &[u8] = assert_sorted(b"HIMSUVWdeklmuwy");
