@@ -366,7 +366,7 @@ impl Piece {
             1.0
         };
 
-        // Convert to f64 to have signed zero
+        // Convert to `f64` to have signed zero
         let hour = sign * f64::from(utc_offset_abs / 3600);
         let minute = (utc_offset_abs / 60) % 60;
         let second = utc_offset_abs % 60;
@@ -766,10 +766,11 @@ impl<'t, 'f, T: Time> TimeFormatter<'t, 'f, T> {
 
         loop {
             // The left padding overrides the other padding options for most cases.
-            // It is also used for the hour sign in the %z specifier.
+            // It is also used for the hour sign in the `%z` specifier.
             //
-            // Similary, the change case flag overrides the upper case flag, except
-            // when using combination specifiers (%c, %D, %x, %F, %v, %r, %R, %T, %X).
+            // Similarly, the change case flag overrides the upper case flag,
+            // except when using combination specifiers (`%c`, `%D`, `%x`, `%F`,
+            // `%v`, `%r`, `%R`, `%T`, `%X`).
             match cursor.remaining().first() {
                 Some(&b'-') => {
                     padding = Padding::Left;
