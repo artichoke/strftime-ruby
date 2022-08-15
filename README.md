@@ -58,4 +58,5 @@ releases.
 
 ## License
 
-`strftime-ruby` is licensed under the [MIT License](LICENSE) (c) Ryan Lopopolo.
+`strftime-ruby` is licensed under the [MIT License](LICENSE) (c) Ryan Lopopolo
+and x-hgg-x.
