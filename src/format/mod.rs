@@ -121,10 +121,10 @@ enum Spec {
     /// `"%Y"`: Year with century if provided, zero-padded to at least 4 digits
     /// plus the possible negative sign.
     Year4Digits,
-    /// `"%C"`: `Year / 100` using Euclidian division, zero-padded to at least 2
+    /// `"%C"`: `Year / 100` using Euclidean division, zero-padded to at least 2
     /// digits.
     YearDiv100,
-    /// `"%y"`: `Year % 100` in `00..=99`, using Euclidian remainder, zero-padded
+    /// `"%y"`: `Year % 100` in `00..=99`, using Euclidean remainder, zero-padded
     /// to 2 digits.
     YearRem100,
     /// `"%m"`: Month of the year in `01..=12`, zero-padded to 2 digits.
@@ -160,10 +160,10 @@ enum Spec {
     Minute,
     /// `"%S"`: Second of the minute in `00..=60`, zero-padded to 2 digits.
     Second,
-    /// `"%L"`: Troncated fractional seconds digits, with 3 digits by default.
+    /// `"%L"`: Truncated fractional seconds digits, with 3 digits by default.
     /// Number of digits is specified by the width field.
     MilliSecond,
-    /// `"%N"`: Troncated fractional seconds digits, with 9 digits by default.
+    /// `"%N"`: Truncated fractional seconds digits, with 9 digits by default.
     /// Number of digits is specified by the width field.
     FractionalSecond,
     /// `"%z"`: Zero-padded signed time zone UTC hour and minute offsets

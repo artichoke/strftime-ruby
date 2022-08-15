@@ -58,8 +58,8 @@ The modifiers are `E` and `O`. They are ignored.
 | Specifier  | Example       | Description                                                                                                           |
 |------------|---------------|-----------------------------------------------------------------------------------------------------------------------|
 |    `%Y`    | `-2001`       | Year with century if provided, zero-padded to at least 4 digits plus the possible negative sign.                      |
-|    `%C`    | `-21`         | `Year / 100` using Euclidian division, zero-padded to at least 2 digits.                                              |
-|    `%y`    | `99`          | `Year % 100` in `00..=99`, using Euclidian remainder, zero-padded to 2 digits.                                        |
+|    `%C`    | `-21`         | `Year / 100` using Euclidean division, zero-padded to at least 2 digits.                                              |
+|    `%y`    | `99`          | `Year % 100` in `00..=99`, using Euclidean remainder, zero-padded to 2 digits.                                        |
 |    `%m`    | `01`          | Month of the year in `01..=12`, zero-padded to 2 digits.                                                              |
 |    `%B`    | `July`        | Locale independent full month name.                                                                                   |
 | `%b`, `%h` | `Jul`         | Locale independent abbreviated month name, using the first 3 letters.                                                 |
@@ -74,8 +74,8 @@ The modifiers are `E` and `O`. They are ignored.
 |    `%p`    | `AM`          | Uppercase meridian indicator (`"AM"` or `"PM"`).                                                                      |
 |    `%M`    | `00`          | Minute of the hour in `00..=59`, zero-padded to 2 digits.                                                             |
 |    `%S`    | `00`          | Second of the minute in `00..=60`, zero-padded to 2 digits.                                                           |
-|    `%L`    | `123`         | Troncated fractional seconds digits, with 3 digits by default. Number of digits is specified by the width field.      |
-|    `%N`    | `123456789`   | Troncated fractional seconds digits, with 9 digits by default. Number of digits is specified by the width field.      |
+|    `%L`    | `123`         | Truncated fractional seconds digits, with 3 digits by default. Number of digits is specified by the width field.      |
+|    `%N`    | `123456789`   | Truncated fractional seconds digits, with 9 digits by default. Number of digits is specified by the width field.      |
 |    `%z`    | `+0200`       | Zero-padded signed time zone UTC hour and minute offsets (`+hhmm`).                                                   |
 |    `%:z`   | `+02:00`      | Zero-padded signed time zone UTC hour and minute offsets with colons (`+hh:mm`).                                      |
 |    `%::z`  | `+02:00:00`   | Zero-padded signed time zone UTC hour, minute and second offsets with colons (`+hh:mm:ss`).                           |
