@@ -151,6 +151,10 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {}
 
 /// Common methods needed for formatting _time_.
+///
+/// This should be implemented for structs representing a _time_.
+///
+/// All the `strftime` functions take as input an implementation of this trait.
 pub trait Time {
     /// Returns the year for _time_ (including the century).
     fn year(&self) -> i32;
