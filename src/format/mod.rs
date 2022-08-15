@@ -705,8 +705,13 @@ impl<'t, 'f, T: Time> TimeFormatter<'t, 'f, T> {
 
     /// Format time using the format string.
     pub(crate) fn fmt(&self, buf: &mut dyn Write) -> Result<(), Error> {
+        // Do nothing if the format string is empty
+        if self.format.is_empty() {
+            return Ok(());
+        }
+
         // Use a size limiter to limit the maximum size of the resulting formatted string
-        let size_limit = self.format.len().saturating_mul(512 * 1024).max(1024);
+        let size_limit = self.format.len().saturating_mul(512 * 1024);
         let mut f = SizeLimiter::new(buf, size_limit);
 
         let mut cursor = Cursor::new(self.format);

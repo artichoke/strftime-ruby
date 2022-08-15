@@ -865,3 +865,10 @@ fn test_format_small_buffer() {
     let result = TimeFormatter::new(&time, "%Y").fmt(&mut &mut buf[..]);
     assert_eq!(result, Err(Error::WriteZero));
 }
+
+#[test]
+fn test_format_empty() {
+    let time = MockTime::default();
+
+    check_format(&time, "", Ok(""));
+}

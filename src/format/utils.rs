@@ -89,7 +89,7 @@ impl<'a> SizeLimiter<'a> {
 
 impl<'a> Write for SizeLimiter<'a> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, Error> {
-        if self.count == self.size_limit {
+        if self.count + buf.len() > self.size_limit {
             return Err(Error::FormattedStringTooLarge);
         }
 
