@@ -385,13 +385,13 @@ pub mod string {
 
 #[cfg(test)]
 mod tests {
-    use super::Error;
-
     #[test]
     #[cfg(feature = "alloc")]
     fn error_display_is_non_empty() {
         use alloc::string::String;
         use core::fmt::Write;
+
+        use super::Error;
 
         let try_reserve_error = {
             let mut s = String::with_capacity(1);
@@ -419,6 +419,8 @@ mod tests {
         use alloc::collections::TryReserveError;
         use alloc::string::String;
         use std::error::Error as _;
+
+        use super::Error;
 
         let try_reserve_error = {
             let mut s = String::with_capacity(1);
