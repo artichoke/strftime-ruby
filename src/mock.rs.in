@@ -1,6 +1,6 @@
 macro_rules! create_mock_time {
     ($($field_name:ident: $field_type:ty),*,) => {
-        #[derive(Default)]
+        #[derive(Default, Clone, Copy)]
         struct MockTime<'a> {
             $($field_name: $field_type),*,
         }
