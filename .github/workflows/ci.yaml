@@ -52,6 +52,12 @@ jobs:
       - name: Test with no default features
         run: cargo test --no-default-features
 
+      - name: Test with only alloc feature
+        run: cargo test --no-default-features --features alloc
+
+      - name: Test with only alloc + std features
+        run: cargo test --no-default-features --features alloc,std
+
   build-msrv:
     name: Build (MSRV)
     runs-on: ubuntu-latest
