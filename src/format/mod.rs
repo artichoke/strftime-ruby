@@ -9,8 +9,6 @@ use core::fmt;
 use core::num::IntErrorKind;
 use core::str;
 
-use bitflags::bitflags;
-
 use crate::{Error, Time};
 use assert::{assert_sorted, assert_sorted_elem_0, assert_to_ascii_uppercase};
 use utils::{Cursor, SizeLimiter};
@@ -84,23 +82,38 @@ const _: () = {
     assert_to_ascii_uppercase(&MONTHS, &MONTHS_UPPER);
 };
 
-bitflags! {
-    /// Formatting flags.
-    struct Flags: u32 {
-        /// Use left padding, removing all other padding options in most cases.
-        const LEFT_PADDING = 1 << 0;
-        /// Change case for a string value.
-        const CHANGE_CASE  = 1 << 1;
-        /// Convert a string value to uppercase.
-        const UPPER_CASE   = 1 << 2;
-    }
+/// Formatting flag.
+#[repr(u8)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+enum Flag {
+    /// Use left padding, removing all other padding options in most cases.
+    LeftPadding = 1 << 0,
+    /// Change case for a string value.
+    ChangeCase = 1 << 1,
+    /// Convert a string value to uppercase.
+    UpperCase = 1 << 2,
 }
 
+/// Combination of formatting flags.
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
+struct Flags(u8);
+
 impl Flags {
-    /// Check if one of the case flags is set.
+    /// Checks if a flag is set.
+    fn contains(self, flag: Flag) -> bool {
+        let flag = flag as u8;
+        (self.0 & flag) == flag
+    }
+
+    /// Sets a flag.
+    fn set(&mut self, flag: Flag) {
+        self.0 |= flag as u8;
+    }
+
+    /// Checks if one of the case flags is set.
     fn has_change_or_upper_case(self) -> bool {
-        let flag = Flags::CHANGE_CASE | Flags::UPPER_CASE;
-        !self.intersection(flag).is_empty()
+        let flags = Flag::ChangeCase as u8 | Flag::UpperCase as u8;
+        self.0 & flags != 0
     }
 }
 
@@ -255,7 +268,7 @@ struct Piece {
     width: Option<usize>,
     /// Padding method.
     padding: Padding,
-    /// Formatting flags.
+    /// Combination of formatting flags.
     flags: Flags,
     /// Formatting specifier.
     spec: Spec,
@@ -279,7 +292,7 @@ impl Piece {
         value: impl fmt::Display,
         default_width: usize,
     ) -> Result<(), Error> {
-        if self.flags.contains(Flags::LEFT_PADDING) {
+        if self.flags.contains(Flag::LeftPadding) {
             write!(f, "{value}")
         } else if self.padding == Padding::Spaces {
             let width = self.width.unwrap_or(default_width);
@@ -297,7 +310,7 @@ impl Piece {
         value: impl fmt::Display,
         default_width: usize,
     ) -> Result<(), Error> {
-        if self.flags.contains(Flags::LEFT_PADDING) {
+        if self.flags.contains(Flag::LeftPadding) {
             write!(f, "{value}")
         } else if self.padding == Padding::Zeros {
             let width = self.width.unwrap_or(default_width);
@@ -330,7 +343,7 @@ impl Piece {
         match self.width {
             None => write!(f, "{s}"),
             Some(width) => {
-                if self.flags.contains(Flags::LEFT_PADDING) {
+                if self.flags.contains(Flag::LeftPadding) {
                     write!(f, "{s}")
                 } else if self.padding == Padding::Zeros {
                     write!(f, "{s:0>width$}")
@@ -360,7 +373,7 @@ impl Piece {
         let utc_offset_abs = utc_offset.unsigned_abs();
 
         // UTC is represented as "-00:00" if the '-' flag is set
-        let sign = if utc_offset < 0 || time.is_utc() && self.flags.contains(Flags::LEFT_PADDING) {
+        let sign = if utc_offset < 0 || time.is_utc() && self.flags.contains(Flag::LeftPadding) {
             -1.0
         } else {
             1.0
@@ -502,7 +515,7 @@ impl Piece {
                 self.format_string(f, meridian)
             }
             Spec::MeridianUpper => {
-                let (am, pm) = if self.flags.contains(Flags::CHANGE_CASE) {
+                let (am, pm) = if self.flags.contains(Flag::ChangeCase) {
                     ("am", "pm")
                 } else {
                     ("AM", "PM")
@@ -539,13 +552,13 @@ impl Piece {
                 if !tz_name.is_empty() {
                     assert!(tz_name.is_ascii());
 
-                    if !self.flags.contains(Flags::LEFT_PADDING) {
+                    if !self.flags.contains(Flag::LeftPadding) {
                         self.write_padding(f, tz_name.len())?;
                     }
 
-                    let convert: fn(&u8) -> u8 = if self.flags.contains(Flags::CHANGE_CASE) {
+                    let convert: fn(&u8) -> u8 = if self.flags.contains(Flag::ChangeCase) {
                         u8::to_ascii_lowercase
-                    } else if self.flags.contains(Flags::UPPER_CASE) {
+                    } else if self.flags.contains(Flag::UpperCase) {
                         u8::to_ascii_uppercase
                     } else {
                         |&x| x
@@ -632,7 +645,7 @@ impl Piece {
                 let min_width = MIN_WIDTH_NO_YEAR + year_width(year).max(default_year_width);
                 self.write_padding(f, min_width)?;
 
-                let (day_names, month_names) = if self.flags.contains(Flags::UPPER_CASE) {
+                let (day_names, month_names) = if self.flags.contains(Flag::UpperCase) {
                     (&DAYS_UPPER, &MONTHS_UPPER)
                 } else {
                     (&DAYS, &MONTHS)
@@ -762,7 +775,7 @@ impl<'t, 'f, T: Time> TimeFormatter<'t, 'f, T> {
     fn parse_spec(cursor: &mut Cursor<'_>) -> Result<Option<Piece>, Error> {
         // Parse flags
         let mut padding = Padding::Left;
-        let mut flags = Flags::empty();
+        let mut flags = Flags::default();
 
         loop {
             // The left padding overrides the other padding options for most cases.
@@ -774,12 +787,12 @@ impl<'t, 'f, T: Time> TimeFormatter<'t, 'f, T> {
             match cursor.remaining().first() {
                 Some(&b'-') => {
                     padding = Padding::Left;
-                    flags.insert(Flags::LEFT_PADDING);
+                    flags.set(Flag::LeftPadding);
                 }
                 Some(&b'_') => padding = Padding::Spaces,
                 Some(&b'0') => padding = Padding::Zeros,
-                Some(&b'^') => flags.insert(Flags::UPPER_CASE),
-                Some(&b'#') => flags.insert(Flags::CHANGE_CASE),
+                Some(&b'^') => flags.set(Flag::UpperCase),
+                Some(&b'#') => flags.set(Flag::ChangeCase),
                 _ => break,
             }
             cursor.next();

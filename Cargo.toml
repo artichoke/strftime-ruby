@@ -24,9 +24,6 @@ default = ["std"]
 std = ["alloc"]
 alloc = []
 
-[dependencies]
-bitflags = "1.3"
-
 [dev-dependencies]
 
 # Check that crate versions are properly updated in documentation and code when
