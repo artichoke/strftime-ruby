@@ -848,6 +848,8 @@ fn test_format_large_width() {
 #[cfg(feature = "alloc")]
 #[test]
 fn test_format_formatted_string_too_large() {
+    use alloc::vec::Vec;
+
     let time = MockTime::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, "");
 
     let mut buf = Vec::new();

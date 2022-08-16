@@ -1,4 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
 #![forbid(unsafe_code)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
@@ -107,6 +106,13 @@
 //! the previous year.
 
 #![doc(html_root_url = "https://docs.rs/strftime-ruby/0.1.0")]
+#![no_std]
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
+#[cfg(feature = "std")]
+extern crate std;
 
 // Ensure code blocks in `README.md` compile
 #[cfg(all(doctest, feature = "std"))]
@@ -245,6 +251,8 @@ pub mod buffered {
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub mod bytes {
+    use alloc::vec::Vec;
+
     use super::{Error, Time};
     use crate::format::TimeFormatter;
 
@@ -285,6 +293,9 @@ pub mod bytes {
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub mod string {
+    use alloc::string::String;
+    use alloc::vec::Vec;
+
     use super::{Error, Time};
     use crate::format::TimeFormatter;
 
