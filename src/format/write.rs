@@ -82,6 +82,7 @@ impl Write for &mut [u8] {
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 impl Write for Vec<u8> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, Error> {
+        self.try_reserve(buf.len())?;
         self.extend_from_slice(buf);
         Ok(buf.len())
     }

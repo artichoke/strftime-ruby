@@ -3,6 +3,7 @@ use crate::{Error, Time};
 
 include!("mock.rs.in");
 
+#[allow(clippy::needless_pass_by_value)] // for ergonomics
 fn check_format(time: &impl Time, format: &str, expected: Result<&str, Error>) {
     const SIZE: usize = 100;
     let mut buf = [0u8; SIZE];
