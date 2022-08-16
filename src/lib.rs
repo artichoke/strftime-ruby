@@ -382,3 +382,70 @@ pub mod string {
         Ok(String::from_utf8(buf).expect("formatted string should be valid UTF-8"))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Error;
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn error_display_is_non_empty() {
+        use alloc::string::String;
+        use core::fmt::Write;
+
+        let try_reserve_error = {
+            let mut s = String::with_capacity(1);
+            s.try_reserve(usize::MAX).unwrap_err()
+        };
+
+        let test_cases = [
+            Error::InvalidTime,
+            Error::InvalidFormatString,
+            Error::FormattedStringTooLarge,
+            Error::WriteZero,
+            Error::FmtError,
+            Error::OutOfMemory(try_reserve_error),
+        ];
+        for err in test_cases {
+            let mut buf = String::new();
+            write!(&mut buf, "{err}").unwrap();
+            assert!(!buf.is_empty());
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn error_cause_returns_inner_error() {
+        use alloc::collections::TryReserveError;
+        use alloc::string::String;
+        use std::error::Error as _;
+
+        let try_reserve_error = {
+            let mut s = String::with_capacity(1);
+            s.try_reserve(usize::MAX).unwrap_err()
+        };
+
+        // Errors variants with no inner error
+        let test_cases = [
+            Error::InvalidTime,
+            Error::InvalidFormatString,
+            Error::FormattedStringTooLarge,
+            Error::WriteZero,
+            Error::FmtError,
+        ];
+        for err in test_cases {
+            assert!(err.source().is_none());
+        }
+
+        // Error variants with an inner error
+        let err = Error::OutOfMemory(try_reserve_error.clone());
+        let err_source = err.source().unwrap();
+        assert_eq!(
+            err_source
+                .downcast_ref::<TryReserveError>()
+                .unwrap()
+                .clone(),
+            try_reserve_error
+        );
+    }
+}
