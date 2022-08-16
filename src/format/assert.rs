@@ -85,4 +85,10 @@ mod tests {
     fn test_assert_to_ascii_uppercase_invalid() {
         assert_to_ascii_uppercase(&["aaa"], &["AaA"]);
     }
+
+    #[test]
+    #[should_panic]
+    fn test_assert_to_ascii_uppercase_invalid_ascii() {
+        assert_to_ascii_uppercase(&["€"], &["€"]);
+    }
 }
