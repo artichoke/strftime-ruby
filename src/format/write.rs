@@ -3,6 +3,8 @@
 //!
 //! [`std::io::Write`]: <https://doc.rust-lang.org/std/io/trait.Write.html>
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 use core::fmt;
 
 use crate::Error;
