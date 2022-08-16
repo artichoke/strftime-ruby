@@ -114,6 +114,9 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
+#[cfg(feature = "alloc")]
+use alloc::collections::TryReserveError;
+
 // Ensure code blocks in `README.md` compile
 #[cfg(all(doctest, feature = "std"))]
 #[doc = include_str!("../README.md")]
@@ -127,7 +130,11 @@ mod tests;
 use core::fmt;
 
 /// Error type returned by the `strftime` functions.
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
+// To ensure the API is the same for all feature combinations, do not derive
+// `Copy`. The `OutOfMemory` variant (when it is enabled by `alloc`) contains a
+// member that is not `Copy`.
+#[allow(missing_copy_implementations)]
 pub enum Error {
     /// Provided format string is ended by an unterminated format specifier.
     InvalidFormatString,
@@ -142,6 +149,11 @@ pub enum Error {
     WriteZero,
     /// Formatting error, corresponding to [`core::fmt::Error`].
     FmtError,
+    /// An allocation failure has occurred in either [`bytes::strftime`] or
+    /// [`string::strftime`].
+    #[cfg(feature = "alloc")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+    OutOfMemory(TryReserveError),
 }
 
 impl fmt::Display for Error {
@@ -151,13 +163,29 @@ impl fmt::Display for Error {
             Error::FormattedStringTooLarge => write!(f, "formatted string too large"),
             Error::WriteZero => write!(f, "failed to write the whole buffer"),
             Error::FmtError => write!(f, "formatter error"),
+            #[cfg(feature = "alloc")]
+            Error::OutOfMemory(..) => write!(f, "allocation failure"),
         }
     }
 }
 
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-impl std::error::Error for Error {}
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::OutOfMemory(ref inner) => Some(inner),
+            _ => None,
+        }
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl From<TryReserveError> for Error {
+    fn from(err: TryReserveError) -> Self {
+        Self::OutOfMemory(err)
+    }
+}
 
 /// Common methods needed for formatting _time_.
 ///
@@ -208,6 +236,11 @@ pub mod buffered {
     ///
     /// See the [crate-level documentation](crate) for a complete description of
     /// possible format specifiers.
+    ///
+    /// # Allocations
+    ///
+    /// This `strftime` implementation makes no heap allocations and is usable
+    /// in a `no_std` context.
     ///
     /// # Examples
     ///
@@ -261,6 +294,13 @@ pub mod bytes {
     /// See the [crate-level documentation](crate) for a complete description of
     /// possible format specifiers.
     ///
+    /// # Allocations
+    ///
+    /// This `strftime` implementation writes its output to a heap-allocated
+    /// [`Vec`]. The implementation exclusively uses fallible allocation APIs
+    /// like [`Vec::try_reserve`]. This function will return [`Error::OutOfMemory`]
+    /// if there is an allocation failure.
+    ///
     /// # Examples
     ///
     /// ```
@@ -303,6 +343,13 @@ pub mod string {
     ///
     /// See the [crate-level documentation](crate) for a complete description of
     /// possible format specifiers.
+    ///
+    /// # Allocations
+    ///
+    /// This `strftime` implementation writes its output to a heap-allocated
+    /// [`Vec`]. The implementation exclusively uses fallible allocation APIs
+    /// like [`Vec::try_reserve`]. This function will return [`Error::OutOfMemory`]
+    /// if there is an allocation failure.
     ///
     /// # Examples
     ///
