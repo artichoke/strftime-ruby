@@ -554,12 +554,11 @@ impl Piece {
             Spec::TimeZoneName => {
                 let tz_name = time.time_zone()?;
                 if !tz_name.is_empty() {
-                    assert!(tz_name.is_ascii());
-
                     if !self.flags.contains(Flag::LeftPadding) {
                         self.write_padding(f, tz_name.len())?;
                     }
 
+                    // The time zone name is guaranteed to be ASCII at this point.
                     let convert: fn(&u8) -> u8 = if self.flags.contains(Flag::ChangeCase) {
                         u8::to_ascii_lowercase
                     } else if self.flags.contains(Flag::UpperCase) {
