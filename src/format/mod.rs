@@ -102,6 +102,7 @@ struct Flags(u8);
 
 impl Flags {
     /// Checks if a flag is set.
+    #[must_use]
     fn contains(self, flag: Flag) -> bool {
         let flag = flag as u8;
         (self.0 & flag) == flag
@@ -113,6 +114,7 @@ impl Flags {
     }
 
     /// Checks if one of the case flags is set.
+    #[must_use]
     fn has_change_or_upper_case(self) -> bool {
         let flags = Flag::ChangeCase as u8 | Flag::UpperCase as u8;
         self.0 & flags != 0
