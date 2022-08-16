@@ -28,7 +28,7 @@ pub(crate) trait CheckedTime {
     fn is_utc(&self) -> bool;
     /// No checks.
     fn utc_offset(&self) -> i32;
-    /// Checks if name of the time zone is valid ascii.
+    /// Checks if the name of the time zone is valid ASCII.
     fn time_zone(&self) -> Result<&str, Error>;
 }
 
