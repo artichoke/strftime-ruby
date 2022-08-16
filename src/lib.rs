@@ -125,7 +125,7 @@ mod readme {}
 mod format;
 
 #[cfg(test)]
-mod tests;
+mod functional_tests;
 
 use core::fmt;
 
