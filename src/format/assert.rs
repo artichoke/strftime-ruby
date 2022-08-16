@@ -48,3 +48,41 @@ pub(crate) const fn assert_to_ascii_uppercase(table: &[&str], upper_table: &[&st
         index += 1;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_assert_sorted() {
+        assert_sorted(&[1, 2, 3]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_assert_sorted_invalid() {
+        assert_sorted(&[1, 3, 2]);
+    }
+
+    #[test]
+    fn test_assert_sorted_elem_0() {
+        assert_sorted_elem_0(&[(1, 3), (2, 2), (3, 1)]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_assert_sorted_elem_0_invalid() {
+        assert_sorted_elem_0(&[(1, 3), (3, 2), (2, 1)]);
+    }
+
+    #[test]
+    fn test_assert_to_ascii_uppercase() {
+        assert_to_ascii_uppercase(&["aaa"], &["AAA"]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_assert_to_ascii_uppercase_invalid() {
+        assert_to_ascii_uppercase(&["aaa"], &["AaA"]);
+    }
+}
