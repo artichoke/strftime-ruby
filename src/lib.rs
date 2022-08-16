@@ -134,8 +134,11 @@ use core::fmt;
 // To ensure the API is the same for all feature combinations, do not derive
 // `Copy`. The `OutOfMemory` variant (when it is enabled by `alloc`) contains a
 // member that is not `Copy`.
+#[non_exhaustive]
 #[allow(missing_copy_implementations)]
 pub enum Error {
+    /// Provided time implementation returns invalid values.
+    InvalidTime,
     /// Provided format string is ended by an unterminated format specifier.
     InvalidFormatString,
     /// Formatted string is too large and could cause an out-of-memory error.
@@ -159,6 +162,7 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Error::InvalidTime => write!(f, "invalid time"),
             Error::InvalidFormatString => write!(f, "invalid format string"),
             Error::FormattedStringTooLarge => write!(f, "formatted string too large"),
             Error::WriteZero => write!(f, "failed to write the whole buffer"),

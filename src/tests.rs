@@ -501,7 +501,7 @@ fn test_format_week_day_name_abbr() {
 #[test]
 #[rustfmt::skip]
 fn test_format_week_day_from_1() {
-    let times = [MockTime { day_of_week: 7, ..Default::default() }];
+    let times = [MockTime { day_of_week: 0, ..Default::default() }];
 
     check_all(&times, "'%u'",    &[Ok("'7'")]);
     check_all(&times, "'%1u'",   &[Ok("'7'")]);
