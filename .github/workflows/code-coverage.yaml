@@ -8,7 +8,7 @@ name: Code Coverage
     branches:
       - trunk
 jobs:
-  build:
+  generate:
     name: Generate
     permissions:
       id-token: write
