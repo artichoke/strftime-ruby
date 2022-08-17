@@ -87,3 +87,24 @@ impl Write for Vec<u8> {
         Ok(buf.len())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_fmt_error() {
+        use core::fmt;
+
+        struct S;
+
+        impl fmt::Display for S {
+            fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
+                Err(fmt::Error)
+            }
+        }
+
+        let mut buf = [0u8; 1];
+        assert_eq!(write!(&mut &mut buf[..], "{S}"), Err(Error::FmtError));
+    }
+}

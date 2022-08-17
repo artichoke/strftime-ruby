@@ -1,7 +1,7 @@
 use crate::format::TimeFormatter;
 use crate::{Error, Time};
 
-include!("mock.rs.in");
+include!("../mock.rs.in");
 
 fn check_format(time: &MockTime<'_>, format: &str, expected: &Result<&str, Error>) {
     const SIZE: usize = 100;

@@ -74,10 +74,10 @@ pub(crate) struct SizeLimiter<'a> {
 
 impl<'a> SizeLimiter<'a> {
     /// Construct a new `SizeLimiter`.
-    pub(crate) fn new(inner: &'a mut dyn Write, max_size: usize) -> Self {
+    pub(crate) fn new(inner: &'a mut dyn Write, size_limit: usize) -> Self {
         Self {
             inner,
-            size_limit: max_size,
+            size_limit,
             count: 0,
         }
     }

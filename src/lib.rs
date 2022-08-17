@@ -162,13 +162,13 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::InvalidTime => write!(f, "invalid time"),
-            Error::InvalidFormatString => write!(f, "invalid format string"),
-            Error::FormattedStringTooLarge => write!(f, "formatted string too large"),
-            Error::WriteZero => write!(f, "failed to write the whole buffer"),
-            Error::FmtError => write!(f, "formatter error"),
+            Error::InvalidTime => f.write_str("invalid time"),
+            Error::InvalidFormatString => f.write_str("invalid format string"),
+            Error::FormattedStringTooLarge => f.write_str("formatted string too large"),
+            Error::WriteZero => f.write_str("failed to write the whole buffer"),
+            Error::FmtError => f.write_str("formatter error"),
             #[cfg(feature = "alloc")]
-            Error::OutOfMemory(..) => write!(f, "allocation failure"),
+            Error::OutOfMemory(..) => f.write_str("allocation failure"),
         }
     }
 }
@@ -178,7 +178,7 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Self::OutOfMemory(ref inner) => Some(inner),
+            Self::OutOfMemory(inner) => Some(inner),
             _ => None,
         }
     }
