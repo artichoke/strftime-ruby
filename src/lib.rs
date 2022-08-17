@@ -229,6 +229,11 @@ pub trait Time {
 // Check that the Time trait is object-safe
 const _: Option<&dyn Time> = None;
 
+/// Format string used by Ruby [`Time#asctime`] method.
+///
+/// [`Time#asctime`]: <https://ruby-doc.org/core-3.1.2/Time.html#method-i-asctime>
+pub const ASCTIME_FORMAT_STRING: &str = "%c";
+
 /// Provides a buffered `strftime` implementation using a format string with
 /// arbitrary bytes.
 pub mod buffered {
