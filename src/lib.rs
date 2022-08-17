@@ -178,7 +178,7 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Self::OutOfMemory(ref inner) => Some(inner),
+            Self::OutOfMemory(inner) => Some(inner),
             _ => None,
         }
     }
@@ -387,85 +387,53 @@ pub mod string {
 mod tests {
     #[test]
     #[cfg(feature = "alloc")]
-    fn error_display_is_non_empty() {
-        use alloc::string::String;
-        use core::fmt::Write;
+    fn test_error_display_is_non_empty() {
+        use alloc::string::ToString;
+        use alloc::vec::Vec;
 
         use super::Error;
 
-        let try_reserve_error = {
-            let mut s = String::with_capacity(1);
-            s.try_reserve(usize::MAX).unwrap_err()
-        };
+        let try_reserve_error = Vec::<u8>::new().try_reserve(usize::MAX).unwrap_err();
 
-        let test_cases = [
-            Error::InvalidTime,
-            Error::InvalidFormatString,
-            Error::FormattedStringTooLarge,
-            Error::WriteZero,
-            Error::FmtError,
-            Error::OutOfMemory(try_reserve_error),
-        ];
-        for err in test_cases {
-            let mut buf = String::new();
-            write!(&mut buf, "{err}").unwrap();
-            assert!(!buf.is_empty());
-        }
+        assert!(!Error::InvalidTime.to_string().is_empty());
+        assert!(!Error::InvalidFormatString.to_string().is_empty());
+        assert!(!Error::FormattedStringTooLarge.to_string().is_empty());
+        assert!(!Error::WriteZero.to_string().is_empty());
+        assert!(!Error::FmtError.to_string().is_empty());
+        assert!(!Error::OutOfMemory(try_reserve_error).to_string().is_empty());
     }
 
     #[test]
     #[cfg(feature = "alloc")]
-    fn error_from_try_reserve_error_is_out_of_memory_variant() {
-        use alloc::string::String;
+    fn test_error_from_try_reserve_error_is_out_of_memory_variant() {
+        use alloc::vec::Vec;
 
         use super::Error;
 
-        let try_reserve_error = {
-            let mut s = String::with_capacity(1);
-            s.try_reserve(usize::MAX).unwrap_err()
-        };
-
-        assert!(matches!(
-            Error::from(try_reserve_error),
-            Error::OutOfMemory(..)
-        ));
+        let try_reserve_error = Vec::<u8>::new().try_reserve(usize::MAX).unwrap_err();
+        assert!(matches!(try_reserve_error.into(), Error::OutOfMemory(..)));
     }
 
     #[test]
     #[cfg(feature = "std")]
-    fn error_cause_returns_inner_error() {
-        use alloc::collections::TryReserveError;
-        use alloc::string::String;
+    fn test_error_source_returns_inner_error() {
+        use alloc::vec::Vec;
         use std::error::Error as _;
 
         use super::Error;
 
-        let try_reserve_error = {
-            let mut s = String::with_capacity(1);
-            s.try_reserve(usize::MAX).unwrap_err()
-        };
+        let try_reserve_error = Vec::<u8>::new().try_reserve(usize::MAX).unwrap_err();
 
-        // Errors variants with no inner error
-        let test_cases = [
-            Error::InvalidTime,
-            Error::InvalidFormatString,
-            Error::FormattedStringTooLarge,
-            Error::WriteZero,
-            Error::FmtError,
-        ];
-        for err in test_cases {
-            assert!(err.source().is_none());
-        }
+        // Errors variants without inner error
+        assert!(Error::InvalidTime.source().is_none());
+        assert!(Error::InvalidFormatString.source().is_none());
+        assert!(Error::FormattedStringTooLarge.source().is_none());
+        assert!(Error::WriteZero.source().is_none());
+        assert!(Error::FmtError.source().is_none());
 
-        // Error variants with an inner error
+        // Error variants with inner error
         let err = Error::OutOfMemory(try_reserve_error.clone());
-        let err_source = err.source().unwrap();
-        assert_eq!(
-            err_source
-                .downcast_ref::<TryReserveError>()
-                .unwrap()
-                .clone(),
-            try_reserve_error
-        );
+        let err_source = err.source().unwrap().downcast_ref();
+        assert_eq!(err_source, Some(&try_reserve_error));
     }
 }
