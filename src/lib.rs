@@ -414,6 +414,24 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "alloc")]
+    fn error_from_try_reserve_error_is_out_of_memory_variant() {
+        use alloc::string::String;
+
+        use super::Error;
+
+        let try_reserve_error = {
+            let mut s = String::with_capacity(1);
+            s.try_reserve(usize::MAX).unwrap_err()
+        };
+
+        assert!(matches!(
+            Error::from(try_reserve_error),
+            Error::OutOfMemory(..)
+        ));
+    }
+
+    #[test]
     #[cfg(feature = "std")]
     fn error_cause_returns_inner_error() {
         use alloc::collections::TryReserveError;
