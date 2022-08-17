@@ -10,6 +10,9 @@ name: Code Coverage
 jobs:
   build:
     name: Generate
+    permissions:
+      id-token: write
+      contents: read
     runs-on: ubuntu-latest
     env:
       RUST_BACKTRACE: 1
