@@ -57,7 +57,7 @@ jobs:
 
       - name: Upload archives to S3
         run: |
-          aws s3 sync target/coverage/ s3://artichoke-forge-code-coverage-us-west-2/strftime-ruby/ --recursive --delete --sse AES256 --exclude '*' --include '*.svg' --content-type 'image/svg+xml'
-          aws s3 sync target/coverage/ s3://artichoke-forge-code-coverage-us-west-2/strftime-ruby/ --recursive --delete --sse AES256 --exclude '*' --include '*.html' --content-type 'text/html'
-          aws s3 sync target/coverage/ s3://artichoke-forge-code-coverage-us-west-2/strftime-ruby/ --recursive --delete --sse AES256 --exclude '*' --include '*.json' --content-type 'application/json'
-          aws s3 sync target/coverage/ s3://artichoke-forge-code-coverage-us-west-2/strftime-ruby/ --recursive --delete --sse AES256 --include '*' --exclude '*.svg' --exclude '*.html' --exclude '*.json'
+          aws s3 sync target/coverage/ s3://artichoke-forge-code-coverage-us-west-2/strftime-ruby/ --delete --sse AES256 --exclude '*' --include '*.svg' --content-type 'image/svg+xml'
+          aws s3 sync target/coverage/ s3://artichoke-forge-code-coverage-us-west-2/strftime-ruby/ --delete --sse AES256 --exclude '*' --include '*.html' --content-type 'text/html'
+          aws s3 sync target/coverage/ s3://artichoke-forge-code-coverage-us-west-2/strftime-ruby/ --delete --sse AES256 --exclude '*' --include '*.json' --content-type 'application/json'
+          aws s3 sync target/coverage/ s3://artichoke-forge-code-coverage-us-west-2/strftime-ruby/ --delete --sse AES256 --include '*' --exclude '*.svg' --exclude '*.html' --exclude '*.json'
