@@ -125,7 +125,7 @@ mod readme {}
 mod format;
 
 #[cfg(test)]
-mod functional_tests;
+mod tests;
 
 use core::fmt;
 
@@ -380,60 +380,5 @@ pub mod string {
         let mut buf = Vec::new();
         TimeFormatter::new(time, format).fmt(&mut buf)?;
         Ok(String::from_utf8(buf).expect("formatted string should be valid UTF-8"))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    #[cfg(feature = "alloc")]
-    fn test_error_display_is_non_empty() {
-        use alloc::string::ToString;
-        use alloc::vec::Vec;
-
-        use super::Error;
-
-        let try_reserve_error = Vec::<u8>::new().try_reserve(usize::MAX).unwrap_err();
-
-        assert!(!Error::InvalidTime.to_string().is_empty());
-        assert!(!Error::InvalidFormatString.to_string().is_empty());
-        assert!(!Error::FormattedStringTooLarge.to_string().is_empty());
-        assert!(!Error::WriteZero.to_string().is_empty());
-        assert!(!Error::FmtError.to_string().is_empty());
-        assert!(!Error::OutOfMemory(try_reserve_error).to_string().is_empty());
-    }
-
-    #[test]
-    #[cfg(feature = "alloc")]
-    fn test_error_from_try_reserve_error_is_out_of_memory_variant() {
-        use alloc::vec::Vec;
-
-        use super::Error;
-
-        let try_reserve_error = Vec::<u8>::new().try_reserve(usize::MAX).unwrap_err();
-        assert!(matches!(try_reserve_error.into(), Error::OutOfMemory(..)));
-    }
-
-    #[test]
-    #[cfg(feature = "std")]
-    fn test_error_source_returns_inner_error() {
-        use alloc::vec::Vec;
-        use std::error::Error as _;
-
-        use super::Error;
-
-        let try_reserve_error = Vec::<u8>::new().try_reserve(usize::MAX).unwrap_err();
-
-        // Errors variants without inner error
-        assert!(Error::InvalidTime.source().is_none());
-        assert!(Error::InvalidFormatString.source().is_none());
-        assert!(Error::FormattedStringTooLarge.source().is_none());
-        assert!(Error::WriteZero.source().is_none());
-        assert!(Error::FmtError.source().is_none());
-
-        // Error variants with inner error
-        let err = Error::OutOfMemory(try_reserve_error.clone());
-        let err_source = err.source().unwrap().downcast_ref();
-        assert_eq!(err_source, Some(&try_reserve_error));
     }
 }
