@@ -185,7 +185,7 @@ impl fmt::Display for Error {
             #[cfg(feature = "alloc")]
             Error::OutOfMemory(..) => f.write_str("allocation failure"),
             #[cfg(feature = "std")]
-            Error::IoError(err) => write!(f, "{err}"),
+            Error::IoError(err) => write!(f, "io error: {err:?}"),
         }
     }
 }
