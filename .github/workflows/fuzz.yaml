@@ -1,0 +1,53 @@
+---
+name: Fuzz
+"on":
+  schedule:
+    - cron: "0 0 * * *"
+jobs:
+  bytes:
+    name: Fuzz bytes
+    runs-on: ubuntu-latest
+    env:
+      RUST_BACKTRACE: 1
+      CARGO_NET_GIT_FETCH_WITH_CLI: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+
+      - name: Fuzz
+        run: cargo fuzz run bytes -- -max_total_time=1800 # 30 minutes
+
+  string:
+    name: Fuzz string
+    runs-on: ubuntu-latest
+    env:
+      RUST_BACKTRACE: 1
+      CARGO_NET_GIT_FETCH_WITH_CLI: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+
+      - name: Fuzz
+        run: cargo fuzz run string -- -max_total_time=1800 # 30 minutes
