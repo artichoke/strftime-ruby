@@ -568,7 +568,7 @@ impl Piece {
                     };
 
                     for x in tz_name.as_bytes() {
-                        f.write(&[convert(x)])?;
+                        f.write_all(&[convert(x)])?;
                     }
                 }
                 Ok(())
