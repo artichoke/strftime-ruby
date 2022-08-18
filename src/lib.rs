@@ -185,6 +185,7 @@ impl std::error::Error for Error {
 }
 
 #[cfg(feature = "alloc")]
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 impl From<TryReserveError> for Error {
     fn from(err: TryReserveError) -> Self {
         Self::OutOfMemory(err)
