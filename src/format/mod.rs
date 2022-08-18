@@ -8,12 +8,13 @@ mod write;
 
 use core::fmt;
 use core::num::IntErrorKind;
+use core::ops::{Index, RangeTo};
 use core::str;
 
 use crate::Error;
 use assert::{assert_sorted, assert_sorted_elem_0, assert_to_ascii_uppercase};
 use check::CheckedTime;
-use utils::{Cursor, SizeLimiter};
+use utils::{Cursor, GenericCursor, SizeLimiter};
 use week::{iso_8601_year_and_week_number, week_number, WeekStart};
 use write::Write;
 
@@ -292,7 +293,7 @@ impl Piece {
     /// Format a numerical value, padding with zeros by default.
     fn format_num_zeros(
         &self,
-        f: &mut SizeLimiter<'_>,
+        f: &mut impl Write,
         value: impl fmt::Display,
         default_width: usize,
     ) -> Result<(), Error> {
@@ -310,7 +311,7 @@ impl Piece {
     /// Format a numerical value, padding with spaces by default.
     fn format_num_spaces(
         &self,
-        f: &mut SizeLimiter<'_>,
+        f: &mut impl Write,
         value: impl fmt::Display,
         default_width: usize,
     ) -> Result<(), Error> {
@@ -328,7 +329,7 @@ impl Piece {
     /// Format nanoseconds with the specified precision.
     fn format_nanoseconds(
         &self,
-        f: &mut SizeLimiter<'_>,
+        f: &mut impl Write,
         nanoseconds: u32,
         default_width: usize,
     ) -> Result<(), Error> {
@@ -343,7 +344,7 @@ impl Piece {
     }
 
     /// Format a string value.
-    fn format_string(&self, f: &mut SizeLimiter<'_>, s: &str) -> Result<(), Error> {
+    fn format_string(&self, f: &mut impl Write, s: &str) -> Result<(), Error> {
         match self.width {
             None => write!(f, "{s}"),
             Some(width) => {
@@ -359,7 +360,7 @@ impl Piece {
     }
 
     /// Write padding separately.
-    fn write_padding(&self, f: &mut SizeLimiter<'_>, min_width: usize) -> Result<(), Error> {
+    fn write_padding(&self, f: &mut impl Write, min_width: usize) -> Result<(), Error> {
         if let Some(width) = self.width {
             let n = width.saturating_sub(min_width);
 
@@ -402,11 +403,7 @@ impl Piece {
     }
 
     /// Write the time zone UTC offset as `"+hh"`.
-    fn write_offset_hh(
-        &self,
-        f: &mut SizeLimiter<'_>,
-        utc_offset: &UtcOffset,
-    ) -> Result<(), Error> {
+    fn write_offset_hh(&self, f: &mut impl Write, utc_offset: &UtcOffset) -> Result<(), Error> {
         let hour = utc_offset.hour;
         let n = self.hour_padding("+hh".len());
 
@@ -417,11 +414,7 @@ impl Piece {
     }
 
     /// Write the time zone UTC offset as `"+hhmm"`.
-    fn write_offset_hhmm(
-        &self,
-        f: &mut SizeLimiter<'_>,
-        utc_offset: &UtcOffset,
-    ) -> Result<(), Error> {
+    fn write_offset_hhmm(&self, f: &mut impl Write, utc_offset: &UtcOffset) -> Result<(), Error> {
         let UtcOffset { hour, minute, .. } = utc_offset;
         let n = self.hour_padding("+hhmm".len());
 
@@ -432,11 +425,7 @@ impl Piece {
     }
 
     /// Write the time zone UTC offset as `"+hh:mm"`.
-    fn write_offset_hh_mm(
-        &self,
-        f: &mut SizeLimiter<'_>,
-        utc_offset: &UtcOffset,
-    ) -> Result<(), Error> {
+    fn write_offset_hh_mm(&self, f: &mut impl Write, utc_offset: &UtcOffset) -> Result<(), Error> {
         let UtcOffset { hour, minute, .. } = utc_offset;
         let n = self.hour_padding("+hh:mm".len());
 
@@ -449,7 +438,7 @@ impl Piece {
     /// Write the time zone UTC offset as `"+hh:mm:ss"`.
     fn write_offset_hh_mm_ss(
         &self,
-        f: &mut SizeLimiter<'_>,
+        f: &mut impl Write,
         utc_offset: &UtcOffset,
     ) -> Result<(), Error> {
         let UtcOffset {
@@ -468,7 +457,7 @@ impl Piece {
 
     /// Format time using the formatting directive.
     #[allow(clippy::too_many_lines)]
-    fn fmt(&self, f: &mut SizeLimiter<'_>, time: &impl CheckedTime) -> Result<(), Error> {
+    fn fmt(&self, f: &mut impl Write, time: &impl CheckedTime) -> Result<(), Error> {
         match self.spec {
             Spec::Year4Digits => {
                 let year = time.year();
@@ -559,16 +548,16 @@ impl Piece {
                     }
 
                     // The time zone name is guaranteed to be ASCII at this point.
-                    let convert: fn(&u8) -> u8 = if self.flags.contains(Flag::ChangeCase) {
-                        u8::to_ascii_lowercase
+                    let convert: fn(&char) -> char = if self.flags.contains(Flag::ChangeCase) {
+                        char::to_ascii_lowercase
                     } else if self.flags.contains(Flag::UpperCase) {
-                        u8::to_ascii_uppercase
+                        char::to_ascii_uppercase
                     } else {
                         |&x| x
                     };
 
-                    for x in tz_name.as_bytes() {
-                        f.write_all(&[convert(x)])?;
+                    for c in tz_name.chars() {
+                        write!(f, "{}", convert(&c))?;
                     }
                 }
                 Ok(())
@@ -720,52 +709,56 @@ impl Piece {
 }
 
 /// Wrapper struct for formatting time with the provided format string.
-pub(crate) struct TimeFormatter<'t, 'f, T> {
+pub(crate) struct TimeFormatter<'t, 'f, T, F: ?Sized> {
     /// Time implementation
     time: &'t T,
     /// Format string
-    format: &'f [u8],
+    format: &'f F,
 }
 
-impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
+impl<'t, 'f, T, F> TimeFormatter<'t, 'f, T, F>
+where
+    T: CheckedTime,
+    F: AsRef<[u8]> + ?Sized + Index<RangeTo<usize>, Output = F>,
+    GenericCursor<'f, F>: Cursor<'f, Slice = F>,
+{
     /// Construct a new `TimeFormatter` wrapper.
-    pub(crate) fn new<F: AsRef<[u8]> + ?Sized>(time: &'t T, format: &'f F) -> Self {
-        Self {
-            time,
-            format: format.as_ref(),
-        }
+    pub(crate) fn new(time: &'t T, format: &'f F) -> Self {
+        Self { time, format }
     }
 
     /// Format time using the format string.
-    pub(crate) fn fmt(&self, buf: &mut dyn Write) -> Result<(), Error> {
+    pub(crate) fn fmt(&self, buf: &mut impl Write<Slice = F>) -> Result<(), Error> {
         // Do nothing if the format string is empty
-        if self.format.is_empty() {
+        if self.format.as_ref().is_empty() {
             return Ok(());
         }
 
         // Use a size limiter to limit the maximum size of the resulting
         // formatted string
-        let size_limit = self.format.len().saturating_mul(512 * 1024);
+        let size_limit = self.format.as_ref().len().saturating_mul(512 * 1024);
         let mut f = SizeLimiter::new(buf, size_limit);
 
-        let mut cursor = Cursor::new(self.format);
+        let mut cursor = GenericCursor::new(self.format);
 
         loop {
-            f.write_all(cursor.read_until(|&x| x == b'%'))?;
+            f.write_all(cursor.read_until(|x| x == b'%'))?;
+
+            if cursor.remaining().as_ref().is_empty() {
+                break;
+            }
 
             let remaining_before = cursor.remaining();
 
-            // Read the '%' character
-            if cursor.next().is_none() {
-                break;
-            }
+            // Read the `%` character
+            cursor.advance();
 
             match Self::parse_spec(&mut cursor)? {
                 Some(piece) => piece.fmt(&mut f, self.time)?,
                 None => {
                     // No valid format specifier was found
-                    let remaining_after = cursor.remaining();
-                    let text = &remaining_before[..remaining_before.len() - remaining_after.len()];
+                    let remaining_len = cursor.remaining().as_ref().len();
+                    let text = &remaining_before[..remaining_before.as_ref().len() - remaining_len];
                     f.write_all(text)?;
                 }
             }
@@ -775,7 +768,8 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
     }
 
     /// Parse a formatting directive.
-    fn parse_spec(cursor: &mut Cursor<'_>) -> Result<Option<Piece>, Error> {
+    #[allow(clippy::too_many_lines)]
+    fn parse_spec(cursor: &mut impl Cursor<'f>) -> Result<Option<Piece>, Error> {
         // Parse flags
         let mut padding = Padding::Left;
         let mut flags = Flags::default();
@@ -787,22 +781,22 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
             // Similarly, the change case flag overrides the upper case flag,
             // except when using combination specifiers (`%c`, `%D`, `%x`, `%F`,
             // `%v`, `%r`, `%R`, `%T`, `%X`).
-            match cursor.remaining().first() {
-                Some(&b'-') => {
+            match cursor.first_byte() {
+                Some(b'-') => {
                     padding = Padding::Left;
                     flags.set(Flag::LeftPadding);
                 }
-                Some(&b'_') => padding = Padding::Spaces,
-                Some(&b'0') => padding = Padding::Zeros,
-                Some(&b'^') => flags.set(Flag::UpperCase),
-                Some(&b'#') => flags.set(Flag::ChangeCase),
+                Some(b'_') => padding = Padding::Spaces,
+                Some(b'0') => padding = Padding::Zeros,
+                Some(b'^') => flags.set(Flag::UpperCase),
+                Some(b'#') => flags.set(Flag::ChangeCase),
                 _ => break,
             }
-            cursor.next();
+            cursor.advance();
         }
 
         // Parse width
-        let width_digits = str::from_utf8(cursor.read_while(u8::is_ascii_digit))
+        let width_digits = str::from_utf8(cursor.read_while(|x| u8::is_ascii_digit(&x)).as_ref())
             .expect("reading ASCII digits should yield a valid UTF-8 slice");
 
         let width = match width_digits.parse::<usize>() {
@@ -814,19 +808,19 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
         // Ignore POSIX locale extensions per MRI 3.1.2:
         //
         // <https://github.com/ruby/ruby/blob/v3_1_2/strftime.c#L713-L722>
-        if let Some(&[ext, spec]) = cursor.remaining().get(..2) {
+        if let Some(&[ext, spec]) = cursor.remaining().as_ref().get(..2) {
             const EXT_E_SPECS: &[u8] = assert_sorted(b"CXYcxy");
             const EXT_O_SPECS: &[u8] = assert_sorted(b"HIMSUVWdeklmuwy");
 
             match ext {
-                b'E' if EXT_E_SPECS.binary_search(&spec).is_ok() => cursor.next(),
-                b'O' if EXT_O_SPECS.binary_search(&spec).is_ok() => cursor.next(),
-                _ => None,
+                b'E' if EXT_E_SPECS.binary_search(&spec).is_ok() => cursor.advance(),
+                b'O' if EXT_O_SPECS.binary_search(&spec).is_ok() => cursor.advance(),
+                _ => (),
             };
         }
 
         // Parse spec
-        let colons = cursor.read_while(|&x| x == b':');
+        let colons = cursor.read_while(|x| x == b':').as_ref();
 
         let spec = if colons.is_empty() {
             const POSSIBLE_SPECS: &[(u8, Spec)] = assert_sorted_elem_0(&[
@@ -876,20 +870,25 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
                 (b'z', Spec::TimeZoneOffsetHourMinute),
             ]);
 
-            match cursor.next() {
+            let next = cursor.first_byte();
+            cursor.advance();
+
+            match next {
                 Some(x) => match POSSIBLE_SPECS.binary_search_by_key(&x, |&(c, _)| c) {
                     Ok(index) => Some(POSSIBLE_SPECS[index].1),
                     Err(_) => None,
                 },
                 None => return Err(Error::InvalidFormatString),
             }
-        } else if cursor.read_optional_tag(b"z") {
-            match colons.len() {
+        } else if cursor.first_byte() == Some(b'z') {
+            let spec = match colons.len() {
                 1 => Some(Spec::TimeZoneOffsetHourMinuteColon),
                 2 => Some(Spec::TimeZoneOffsetHourMinuteSecondColon),
                 3 => Some(Spec::TimeZoneOffsetColonMinimal),
                 _ => None,
-            }
+            };
+            cursor.advance();
+            spec
         } else {
             None
         };

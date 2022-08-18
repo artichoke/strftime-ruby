@@ -8,7 +8,7 @@ fn check_format(time: &MockTime<'_>, format: &str, expected: &Result<&str, Error
     let mut buf = [0u8; SIZE];
     let mut cursor = &mut buf[..];
 
-    let result = TimeFormatter::new(time, format).fmt(&mut cursor);
+    let result = TimeFormatter::new(time, format.as_bytes()).fmt(&mut cursor);
     let written = SIZE - cursor.len();
     let data = core::str::from_utf8(&buf[..written]).unwrap();
 
@@ -848,11 +848,11 @@ fn test_format_large_width() {
 #[cfg(feature = "alloc")]
 #[test]
 fn test_format_formatted_string_too_large() {
-    use alloc::vec::Vec;
+    use alloc::string::String;
 
     let time = MockTime::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, "");
 
-    let mut buf = Vec::new();
+    let mut buf = String::new();
     let result = TimeFormatter::new(&time, "%4718593m").fmt(&mut buf);
 
     assert_eq!(buf.len(), 4_718_592);
@@ -864,7 +864,7 @@ fn test_format_small_buffer() {
     let time = MockTime::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, "");
 
     let mut buf = [0u8; 3];
-    let result = TimeFormatter::new(&time, "%Y").fmt(&mut &mut buf[..]);
+    let result = TimeFormatter::new(&time, &b"%Y"[..]).fmt(&mut &mut buf[..]);
     assert_eq!(result, Err(Error::WriteZero));
 }
 

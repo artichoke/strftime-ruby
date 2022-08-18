@@ -344,7 +344,6 @@ pub mod bytes {
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub mod string {
     use alloc::string::String;
-    use alloc::vec::Vec;
 
     use super::{Error, Time};
     use crate::format::TimeFormatter;
@@ -357,8 +356,8 @@ pub mod string {
     /// # Allocations
     ///
     /// This `strftime` implementation writes its output to a heap-allocated
-    /// [`Vec`]. The implementation exclusively uses fallible allocation APIs
-    /// like [`Vec::try_reserve`]. This function will return [`Error::OutOfMemory`]
+    /// [`String`]. The implementation exclusively uses fallible allocation APIs
+    /// like [`String::try_reserve`]. This function will return [`Error::OutOfMemory`]
     /// if there is an allocation failure.
     ///
     /// # Examples
@@ -383,8 +382,8 @@ pub mod string {
     ///
     /// Can produce an [`Error`](crate::Error) when the formatting fails.
     pub fn strftime(time: &impl Time, format: &str) -> Result<String, Error> {
-        let mut buf = Vec::new();
+        let mut buf = String::new();
         TimeFormatter::new(time, format).fmt(&mut buf)?;
-        Ok(String::from_utf8(buf).expect("formatted string should be valid UTF-8"))
+        Ok(buf)
     }
 }
