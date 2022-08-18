@@ -33,6 +33,13 @@
 //! %<flags><width><modifier><conversion>
 //! ```
 //!
+//! # Usage
+//!
+//! The various `strftime` functions in this crate take a generic _time_
+//! parameter that implements the [`Time`] trait.
+//!
+//! # Format Specifiers
+//!
 //! ## Flags
 //!
 //! | Flag | Description                                                                            |
