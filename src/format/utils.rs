@@ -89,8 +89,7 @@ impl<'a> Write for SizeLimiter<'a> {
             return Err(Error::FormattedStringTooLarge);
         }
 
-        let write_limit = buf.len().min(self.size_limit - self.count);
-        let written = self.inner.write(&buf[..write_limit])?;
+        let written = self.inner.write(buf)?;
         self.count += written;
         Ok(written)
     }
