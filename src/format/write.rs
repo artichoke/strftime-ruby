@@ -38,11 +38,11 @@ pub(crate) trait Write {
     fn write(&mut self, data: &[u8]) -> Result<usize, Error>;
 
     /// Attempts to write an entire buffer into this writer.
-    fn write_all(&mut self, mut buf: &[u8]) -> Result<(), Error> {
-        while !buf.is_empty() {
-            match self.write(buf)? {
+    fn write_all(&mut self, mut data: &[u8]) -> Result<(), Error> {
+        while !data.is_empty() {
+            match self.write(data)? {
                 0 => return Err(Error::WriteZero),
-                n => buf = &buf[n..],
+                n => data = &data[n..],
             }
         }
         Ok(())
@@ -81,10 +81,33 @@ impl Write for &mut [u8] {
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 impl Write for Vec<u8> {
-    fn write(&mut self, buf: &[u8]) -> Result<usize, Error> {
-        self.try_reserve(buf.len())?;
-        self.extend_from_slice(buf);
-        Ok(buf.len())
+    fn write(&mut self, data: &[u8]) -> Result<usize, Error> {
+        self.try_reserve(data.len())?;
+        self.extend_from_slice(data);
+        Ok(data.len())
+    }
+}
+
+/// Wrapper for a [`std::io::Write`] writer.
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+pub(crate) struct IoWrite<'a> {
+    /// Inner writer.
+    inner: &'a mut dyn std::io::Write,
+}
+
+#[cfg(feature = "std")]
+impl<'a> IoWrite<'a> {
+    pub(crate) fn new(inner: &'a mut dyn std::io::Write) -> Self {
+        Self { inner }
+    }
+}
+
+/// Write is implemented for `IoWrite` by writing to its inner writer.
+#[cfg(feature = "std")]
+impl Write for IoWrite<'_> {
+    fn write(&mut self, data: &[u8]) -> Result<usize, Error> {
+        Ok(self.inner.write(data)?)
     }
 }
 
