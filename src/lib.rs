@@ -432,7 +432,8 @@ pub mod write {
     ///
     /// # Allocations
     ///
-    /// This `strftime` implementation makes no heap allocations.
+    /// This `strftime` implementation makes no heap allocations on its own, but
+    /// the provided writer may allocate.
     ///
     /// # Examples
     ///
