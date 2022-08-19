@@ -165,7 +165,7 @@ pub enum Error {
     #[cfg(feature = "alloc")]
     #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
     OutOfMemory(TryReserveError),
-    /// An I/O error has occurred in [`write::strftime`].
+    /// An I/O error has occurred in [`io::strftime`].
     #[cfg(feature = "std")]
     #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
     IoError(std::io::Error),
@@ -416,7 +416,7 @@ pub mod string {
 /// arbitrary bytes, writing to a [`std::io::Write`] object.
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-pub mod write {
+pub mod io {
     use std::io::Write;
 
     use super::{Error, Time};
@@ -436,7 +436,7 @@ pub mod write {
     /// # Examples
     ///
     /// ```
-    /// use strftime::write::strftime;
+    /// use strftime::io::strftime;
     /// use strftime::Time;
     ///
     /// // Not shown: create a time implementation with the year 1970
