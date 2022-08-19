@@ -139,4 +139,16 @@ mod tests {
         let result = write!(&mut &mut [0u8; 1][..], "{S}");
         assert!(matches!(result, Err(Error::FmtError)));
     }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_io_write() {
+        let mut buf = Vec::new();
+
+        let mut writer = IoWrite::new(&mut buf);
+        writer.write_all(b"ok").unwrap();
+        write!(writer, "{}", 1).unwrap();
+
+        assert_eq!(buf, *b"ok1");
+    }
 }
