@@ -54,6 +54,31 @@ jobs:
       - name: Generate detailed JSON report
         run: grcov strftime*.profraw --source-dir . --binary-path target/debug -t covdir --filter covered -o target/coverage/coverage.json
 
+      - name: Check missed lines
+        run: |
+          curl -s https://codecov.artichokeruby.org/strftime-ruby/coverage.json | python -c '\
+          import sys, json; \
+          \
+          trunk_coverage = json.loads(sys.stdin.read()); \
+          print("On trunk: "); \
+          print("coveragePercent =", trunk_coverage["coveragePercent"]); \
+          print("linesCovered =", trunk_coverage["linesCovered"]); \
+          print("linesMissed =", trunk_coverage["linesMissed"]); \
+          print("linesTotal =", trunk_coverage["linesTotal"]); \
+          print(""); \
+          \
+          branch_coverage = json.load(open("target/coverage/coverage.json"))
+          print("On PR branch: "); \
+          print("coveragePercent =", branch_coverage["coveragePercent"]); \
+          print("linesCovered =", branch_coverage["linesCovered"]); \
+          print("linesMissed =", branch_coverage["linesMissed"]); \
+          print("linesTotal =", branch_coverage["linesTotal"]); \
+          print(""); \
+          \
+          is_ok = branch_coverage["linesMissed"] <= trunk_coverage["linesMissed"]; \
+          exit(0) if is_ok else exit(1) \
+          '
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@master
         if: github.ref == 'refs/heads/trunk'
