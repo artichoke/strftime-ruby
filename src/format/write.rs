@@ -6,6 +6,7 @@
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use core::fmt;
+use core::str;
 
 use crate::Error;
 
@@ -73,6 +74,26 @@ impl Write for &mut [u8] {
         a.copy_from_slice(&data[..size]);
         *self = b;
         Ok(size)
+    }
+}
+
+pub(crate) struct FmtWrite<'a> {
+    /// Inner writer.
+    inner: &'a mut dyn fmt::Write,
+}
+
+impl<'a> FmtWrite<'a> {
+    pub(crate) fn new(inner: &'a mut dyn fmt::Write) -> Self {
+        Self { inner }
+    }
+}
+
+impl Write for FmtWrite<'_> {
+    fn write(&mut self, data: &[u8]) -> Result<usize, Error> {
+        let data =
+            str::from_utf8(data).expect("strftime::fmt::strftime should only receive UTF-8 data");
+        self.inner.write_str(data)?;
+        Ok(data.len())
     }
 }
 
