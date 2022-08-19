@@ -44,6 +44,13 @@ fn test_error_from_io_error() {
     assert!(matches!(io_error.into(), Error::IoError(_)));
 }
 
+#[test]
+fn test_error_from_fmt_error() {
+    use crate::Error;
+
+    assert!(matches!(core::fmt::Error.into(), Error::FmtError));
+}
+
 #[cfg(feature = "std")]
 #[test]
 fn test_error_source_returns_inner_error() {

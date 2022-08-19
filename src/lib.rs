@@ -198,7 +198,7 @@ impl std::error::Error for Error {
 }
 
 impl From<core::fmt::Error> for Error {
-    fn from(_err: core::fmt::Error) -> Self {
+    fn from(_: core::fmt::Error) -> Self {
         Self::FmtError
     }
 }
@@ -317,16 +317,16 @@ pub mod buffered {
     }
 }
 
-/// Provides a `strftime` implementation using a format string with
-/// arbitrary bytes, writing to a [`core::fmt::Write`] object.
+/// Provides a `strftime` implementation using a UTF-8 format string, writing to
+/// a [`core::fmt::Write`] object.
 pub mod fmt {
     use core::fmt::Write;
 
     use super::{Error, Time};
     use crate::format::{FmtWrite, TimeFormatter};
 
-    /// Format a _time_ implementation with the specified format string, writing
-    /// to the provided [`core::fmt::Write`] object.
+    /// Format a _time_ implementation with the specified UTF-8 format string,
+    /// writing to the provided [`core::fmt::Write`] object.
     ///
     /// See the [crate-level documentation](crate) for a complete description of
     /// possible format specifiers.
