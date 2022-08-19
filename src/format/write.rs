@@ -98,6 +98,7 @@ pub(crate) struct IoWrite<'a> {
 
 #[cfg(feature = "std")]
 impl<'a> IoWrite<'a> {
+    /// Construct a new `IoWrite`.
     pub(crate) fn new(inner: &'a mut dyn std::io::Write) -> Self {
         Self { inner }
     }
