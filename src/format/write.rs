@@ -135,7 +135,7 @@ mod tests {
             }
         }
 
-        let mut buf = [0u8; 1];
-        assert_eq!(write!(&mut &mut buf[..], "{S}"), Err(Error::FmtError));
+        let result = write!(&mut &mut [0u8; 1][..], "{S}");
+        assert!(matches!(result, Err(Error::FmtError)));
     }
 }

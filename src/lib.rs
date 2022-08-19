@@ -124,9 +124,6 @@ extern crate std;
 #[cfg(feature = "alloc")]
 use alloc::collections::TryReserveError;
 
-#[cfg(feature = "std")]
-use std::io::ErrorKind;
-
 // Ensure code blocks in `README.md` compile
 #[cfg(all(doctest, feature = "std"))]
 #[doc = include_str!("../README.md")]
@@ -140,7 +137,7 @@ mod tests;
 use core::fmt;
 
 /// Error type returned by the `strftime` functions.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug)]
 // To ensure the API is the same for all feature combinations, do not derive
 // `Copy`. The `OutOfMemory` variant (when it is enabled by `alloc`) contains a
 // member that is not `Copy`.
@@ -171,7 +168,7 @@ pub enum Error {
     /// An I/O error has occurred in [`write::strftime`].
     #[cfg(feature = "std")]
     #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-    IoError(ErrorKind),
+    IoError(std::io::Error),
 }
 
 impl fmt::Display for Error {
@@ -183,9 +180,9 @@ impl fmt::Display for Error {
             Error::WriteZero => f.write_str("failed to write the whole buffer"),
             Error::FmtError => f.write_str("formatter error"),
             #[cfg(feature = "alloc")]
-            Error::OutOfMemory(..) => f.write_str("allocation failure"),
+            Error::OutOfMemory(_) => f.write_str("allocation failure"),
             #[cfg(feature = "std")]
-            Error::IoError(err) => write!(f, "io error: {err:?}"),
+            Error::IoError(_) => f.write_str("I/O error"),
         }
     }
 }
@@ -196,6 +193,7 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::OutOfMemory(inner) => Some(inner),
+            Self::IoError(inner) => Some(inner),
             _ => None,
         }
     }
@@ -213,7 +211,7 @@ impl From<TryReserveError> for Error {
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Self {
-        Self::IoError(err.kind())
+        Self::IoError(err)
     }
 }
 
