@@ -66,3 +66,14 @@ releases.
 
 `strftime-ruby` is licensed under the [MIT License](LICENSE) (c) Ryan Lopopolo
 and x-hgg-x.
+
+This repository includes a vendored copy of [`strftime.c`] from Ruby 3.1.2,
+which is licensed under the [Ruby license] or [BSD 2-clause license]. See
+[`vendor/README.md`] for more details. These sources are not distributed on
+[crates.io].
+
+[`strftime.c`]: vendor/ruby-3.1.2/strftime.c
+[ruby license]: vendor/ruby-3.1.2/COPYING
+[bsd 2-clause license]: vendor/ruby-3.1.2/BSDL
+[`vendor/readme.md`]: vendor/README.md
+[crates.io]: https://crates.io/
