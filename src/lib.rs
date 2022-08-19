@@ -262,8 +262,8 @@ const _: Option<&dyn Time> = None;
 /// [`Time#asctime`]: <https://ruby-doc.org/core-3.1.2/Time.html#method-i-asctime>
 pub const ASCTIME_FORMAT_STRING: &str = "%c";
 
-/// Provides a buffered `strftime` implementation using a format string with
-/// arbitrary bytes.
+/// Provides `strftime` implementation using a format string with arbitrary
+/// bytes, writing to a provided byte slice.
 pub mod buffered {
     use super::{Error, Time};
     use crate::format::TimeFormatter;
@@ -364,7 +364,10 @@ pub mod fmt {
     }
 }
 
-/// Provides a `strftime` implementation using a format string with arbitrary bytes.
+/// Provides a `strftime` implementation using a format string with arbitrary
+/// bytes, writing to a newly allocated [`Vec`].
+///
+/// [`Vec`]: alloc::vec::Vec
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub mod bytes {
@@ -413,7 +416,10 @@ pub mod bytes {
     }
 }
 
-/// Provides a `strftime` implementation using a UTF-8 format string.
+/// Provides a `strftime` implementation using a UTF-8 format string, writing to
+/// a newly allocated [`String`].
+///
+/// [`String`]: alloc::string::String
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub mod string {
@@ -463,8 +469,8 @@ pub mod string {
     }
 }
 
-/// Provides a `strftime` implementation using a format string with
-/// arbitrary bytes, writing to a [`std::io::Write`] object.
+/// Provides a `strftime` implementation using a format string with arbitrary
+/// bytes, writing to a [`std::io::Write`] object.
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub mod io {
