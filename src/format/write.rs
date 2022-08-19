@@ -109,6 +109,14 @@ impl Write for IoWrite<'_> {
     fn write(&mut self, data: &[u8]) -> Result<usize, Error> {
         Ok(self.inner.write(data)?)
     }
+
+    fn write_all(&mut self, data: &[u8]) -> Result<(), Error> {
+        Ok(self.inner.write_all(data)?)
+    }
+
+    fn write_fmt(&mut self, fmt_args: fmt::Arguments<'_>) -> Result<(), Error> {
+        Ok(self.inner.write_fmt(fmt_args)?)
+    }
 }
 
 #[cfg(test)]
