@@ -137,12 +137,13 @@ mod tests;
 use core::fmt;
 
 /// Error type returned by the `strftime` functions.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug)]
 // To ensure the API is the same for all feature combinations, do not derive
 // `Copy`. The `OutOfMemory` variant (when it is enabled by `alloc`) contains a
 // member that is not `Copy`.
 #[non_exhaustive]
 #[allow(missing_copy_implementations)]
+#[allow(variant_size_differences)]
 pub enum Error {
     /// Provided time implementation returns invalid values.
     InvalidTime,
@@ -164,6 +165,10 @@ pub enum Error {
     #[cfg(feature = "alloc")]
     #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
     OutOfMemory(TryReserveError),
+    /// An I/O error has occurred in [`io::strftime`].
+    #[cfg(feature = "std")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+    IoError(std::io::Error),
 }
 
 impl fmt::Display for Error {
@@ -175,7 +180,9 @@ impl fmt::Display for Error {
             Error::WriteZero => f.write_str("failed to write the whole buffer"),
             Error::FmtError => f.write_str("formatter error"),
             #[cfg(feature = "alloc")]
-            Error::OutOfMemory(..) => f.write_str("allocation failure"),
+            Error::OutOfMemory(_) => f.write_str("allocation failure"),
+            #[cfg(feature = "std")]
+            Error::IoError(_) => f.write_str("I/O error"),
         }
     }
 }
@@ -186,6 +193,7 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::OutOfMemory(inner) => Some(inner),
+            Self::IoError(inner) => Some(inner),
             _ => None,
         }
     }
@@ -196,6 +204,14 @@ impl std::error::Error for Error {
 impl From<TryReserveError> for Error {
     fn from(err: TryReserveError) -> Self {
         Self::OutOfMemory(err)
+    }
+}
+
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Self {
+        Self::IoError(err)
     }
 }
 
@@ -393,5 +409,54 @@ pub mod string {
         let mut buf = Vec::new();
         TimeFormatter::new(time, format).fmt(&mut buf)?;
         Ok(String::from_utf8(buf).expect("formatted string should be valid UTF-8"))
+    }
+}
+
+/// Provides a `strftime` implementation using a format string with
+/// arbitrary bytes, writing to a [`std::io::Write`] object.
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+pub mod io {
+    use std::io::Write;
+
+    use super::{Error, Time};
+    use crate::format::{IoWrite, TimeFormatter};
+
+    /// Format a _time_ implementation with the specified format byte string,
+    /// writing to the provided [`std::io::Write`] object.
+    ///
+    /// See the [crate-level documentation](crate) for a complete description of
+    /// possible format specifiers.
+    ///
+    /// # Allocations
+    ///
+    /// This `strftime` implementation makes no heap allocations on its own, but
+    /// the provided writer may allocate.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use strftime::io::strftime;
+    /// use strftime::Time;
+    ///
+    /// // Not shown: create a time implementation with the year 1970
+    /// // let time = ...;
+    /// # include!("mock.rs.in");
+    /// # fn main() -> Result<(), strftime::Error> {
+    /// # let time = MockTime { year: 1970, ..Default::default() };
+    /// assert_eq!(time.year(), 1970);
+    ///
+    /// let mut buf = Vec::new();
+    /// strftime(&time, b"%Y", &mut buf)?;
+    /// assert_eq!(buf, *b"1970");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Can produce an [`Error`](crate::Error) when the formatting fails.
+    pub fn strftime(time: &impl Time, format: &[u8], buf: &mut dyn Write) -> Result<(), Error> {
+        TimeFormatter::new(time, format).fmt(&mut IoWrite::new(buf))
     }
 }

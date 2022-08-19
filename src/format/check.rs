@@ -119,6 +119,14 @@ mod tests {
 
     include!("../mock.rs.in");
 
+    fn check<T>(ok: bool, result: &Result<T, Error>) {
+        if ok {
+            assert!(matches!(result, Ok(_)));
+        } else {
+            assert!(matches!(result, Err(Error::InvalidTime)));
+        }
+    }
+
     #[test]
     fn test_checked_time() {
         #[rustfmt::skip]
@@ -127,24 +135,24 @@ mod tests {
             MockTime::new(1970, 0, 0, 99, 99, 99, 1_000_000_000, 9, 999, 0, false, 0, "€"),
         ];
 
-        assert!(CheckedTime::month(&times[0]).is_ok());
-        assert!(CheckedTime::day(&times[0]).is_ok());
-        assert!(CheckedTime::hour(&times[0]).is_ok());
-        assert!(CheckedTime::minute(&times[0]).is_ok());
-        assert!(CheckedTime::second(&times[0]).is_ok());
-        assert!(CheckedTime::nanoseconds(&times[0]).is_ok());
-        assert!(CheckedTime::day_of_week(&times[0]).is_ok());
-        assert!(CheckedTime::day_of_year(&times[0]).is_ok());
-        assert!(CheckedTime::time_zone(&times[0]).is_ok());
+        check(true, &CheckedTime::month(&times[0]));
+        check(true, &CheckedTime::day(&times[0]));
+        check(true, &CheckedTime::hour(&times[0]));
+        check(true, &CheckedTime::minute(&times[0]));
+        check(true, &CheckedTime::second(&times[0]));
+        check(true, &CheckedTime::nanoseconds(&times[0]));
+        check(true, &CheckedTime::day_of_week(&times[0]));
+        check(true, &CheckedTime::day_of_year(&times[0]));
+        check(true, &CheckedTime::time_zone(&times[0]));
 
-        assert_eq!(CheckedTime::month(&times[1]), Err(Error::InvalidTime));
-        assert_eq!(CheckedTime::day(&times[1]), Err(Error::InvalidTime));
-        assert_eq!(CheckedTime::hour(&times[1]), Err(Error::InvalidTime));
-        assert_eq!(CheckedTime::minute(&times[1]), Err(Error::InvalidTime));
-        assert_eq!(CheckedTime::second(&times[1]), Err(Error::InvalidTime));
-        assert_eq!(CheckedTime::nanoseconds(&times[1]), Err(Error::InvalidTime));
-        assert_eq!(CheckedTime::day_of_week(&times[1]), Err(Error::InvalidTime));
-        assert_eq!(CheckedTime::day_of_year(&times[1]), Err(Error::InvalidTime));
-        assert_eq!(CheckedTime::time_zone(&times[1]), Err(Error::InvalidTime));
+        check(false, &CheckedTime::month(&times[1]));
+        check(false, &CheckedTime::day(&times[1]));
+        check(false, &CheckedTime::hour(&times[1]));
+        check(false, &CheckedTime::minute(&times[1]));
+        check(false, &CheckedTime::second(&times[1]));
+        check(false, &CheckedTime::nanoseconds(&times[1]));
+        check(false, &CheckedTime::day_of_week(&times[1]));
+        check(false, &CheckedTime::day_of_year(&times[1]));
+        check(false, &CheckedTime::time_zone(&times[1]));
     }
 }

@@ -38,11 +38,11 @@ pub(crate) trait Write {
     fn write(&mut self, data: &[u8]) -> Result<usize, Error>;
 
     /// Attempts to write an entire buffer into this writer.
-    fn write_all(&mut self, mut buf: &[u8]) -> Result<(), Error> {
-        while !buf.is_empty() {
-            match self.write(buf)? {
+    fn write_all(&mut self, mut data: &[u8]) -> Result<(), Error> {
+        while !data.is_empty() {
+            match self.write(data)? {
                 0 => return Err(Error::WriteZero),
-                n => buf = &buf[n..],
+                n => data = &data[n..],
             }
         }
         Ok(())
@@ -81,10 +81,42 @@ impl Write for &mut [u8] {
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 impl Write for Vec<u8> {
-    fn write(&mut self, buf: &[u8]) -> Result<usize, Error> {
-        self.try_reserve(buf.len())?;
-        self.extend_from_slice(buf);
-        Ok(buf.len())
+    fn write(&mut self, data: &[u8]) -> Result<usize, Error> {
+        self.try_reserve(data.len())?;
+        self.extend_from_slice(data);
+        Ok(data.len())
+    }
+}
+
+/// Wrapper for a [`std::io::Write`] writer.
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+pub(crate) struct IoWrite<'a> {
+    /// Inner writer.
+    inner: &'a mut dyn std::io::Write,
+}
+
+#[cfg(feature = "std")]
+impl<'a> IoWrite<'a> {
+    /// Construct a new `IoWrite`.
+    pub(crate) fn new(inner: &'a mut dyn std::io::Write) -> Self {
+        Self { inner }
+    }
+}
+
+/// Write is implemented for `IoWrite` by writing to its inner writer.
+#[cfg(feature = "std")]
+impl Write for IoWrite<'_> {
+    fn write(&mut self, data: &[u8]) -> Result<usize, Error> {
+        Ok(self.inner.write(data)?)
+    }
+
+    fn write_all(&mut self, data: &[u8]) -> Result<(), Error> {
+        Ok(self.inner.write_all(data)?)
+    }
+
+    fn write_fmt(&mut self, fmt_args: fmt::Arguments<'_>) -> Result<(), Error> {
+        Ok(self.inner.write_fmt(fmt_args)?)
     }
 }
 
@@ -104,7 +136,19 @@ mod tests {
             }
         }
 
-        let mut buf = [0u8; 1];
-        assert_eq!(write!(&mut &mut buf[..], "{S}"), Err(Error::FmtError));
+        let result = write!(&mut &mut [0u8; 1][..], "{S}");
+        assert!(matches!(result, Err(Error::FmtError)));
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_io_write() {
+        let mut buf = Vec::new();
+
+        let mut writer = IoWrite::new(&mut buf);
+        writer.write_all(b"ok").unwrap();
+        write!(writer, "{}", 1).unwrap();
+
+        assert_eq!(buf, *b"ok1");
     }
 }

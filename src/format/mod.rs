@@ -17,6 +17,9 @@ use utils::{Cursor, SizeLimiter};
 use week::{iso_8601_year_and_week_number, week_number, WeekStart};
 use write::Write;
 
+#[cfg(feature = "std")]
+pub(crate) use write::IoWrite;
+
 /// Alias to a `c_int`.
 #[cfg(feature = "std")]
 type Int = std::os::raw::c_int;
