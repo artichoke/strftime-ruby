@@ -6,6 +6,7 @@
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use core::fmt;
+use core::str;
 
 use crate::Error;
 
@@ -73,6 +74,32 @@ impl Write for &mut [u8] {
         a.copy_from_slice(&data[..size]);
         *self = b;
         Ok(size)
+    }
+}
+
+/// Wrapper for a [`core::fmt::Write`] writer.
+pub(crate) struct FmtWrite<'a> {
+    /// Inner writer.
+    inner: &'a mut dyn fmt::Write,
+}
+
+impl<'a> FmtWrite<'a> {
+    /// Construct a new `FmtWrite`.
+    pub(crate) fn new(inner: &'a mut dyn fmt::Write) -> Self {
+        Self { inner }
+    }
+}
+
+/// Write is implemented for `FmtWrite` by writing to its inner writer.
+impl Write for FmtWrite<'_> {
+    fn write(&mut self, data: &[u8]) -> Result<usize, Error> {
+        let data = str::from_utf8(data).expect("FmtWrite should only receive UTF-8 data");
+        self.inner.write_str(data)?;
+        Ok(data.len())
+    }
+
+    fn write_fmt(&mut self, fmt_args: fmt::Arguments<'_>) -> Result<(), Error> {
+        Ok(self.inner.write_fmt(fmt_args)?)
     }
 }
 
@@ -150,5 +177,15 @@ mod tests {
         write!(writer, "{}", 1).unwrap();
 
         assert_eq!(buf, *b"ok1");
+    }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_fmt_write() {
+        use alloc::string::String;
+
+        let mut buf = String::new();
+        write!(FmtWrite::new(&mut buf), "{}", 1).unwrap();
+        assert_eq!(buf, "1");
     }
 }

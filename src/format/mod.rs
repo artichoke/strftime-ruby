@@ -17,6 +17,7 @@ use utils::{Cursor, SizeLimiter};
 use week::{iso_8601_year_and_week_number, week_number, WeekStart};
 use write::Write;
 
+pub(crate) use write::FmtWrite;
 #[cfg(feature = "std")]
 pub(crate) use write::IoWrite;
 

@@ -134,8 +134,6 @@ mod format;
 #[cfg(test)]
 mod tests;
 
-use core::fmt;
-
 /// Error type returned by the `strftime` functions.
 #[derive(Debug)]
 // To ensure the API is the same for all feature combinations, do not derive
@@ -171,8 +169,8 @@ pub enum Error {
     IoError(std::io::Error),
 }
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Error::InvalidTime => f.write_str("invalid time"),
             Error::InvalidFormatString => f.write_str("invalid format string"),
@@ -196,6 +194,12 @@ impl std::error::Error for Error {
             Self::IoError(inner) => Some(inner),
             _ => None,
         }
+    }
+}
+
+impl From<core::fmt::Error> for Error {
+    fn from(_: core::fmt::Error) -> Self {
+        Self::FmtError
     }
 }
 
@@ -310,6 +314,53 @@ pub mod buffered {
         let remaining_len = cursor.len();
 
         Ok(&mut buf[..len - remaining_len])
+    }
+}
+
+/// Provides a `strftime` implementation using a UTF-8 format string, writing to
+/// a [`core::fmt::Write`] object.
+pub mod fmt {
+    use core::fmt::Write;
+
+    use super::{Error, Time};
+    use crate::format::{FmtWrite, TimeFormatter};
+
+    /// Format a _time_ implementation with the specified UTF-8 format string,
+    /// writing to the provided [`core::fmt::Write`] object.
+    ///
+    /// See the [crate-level documentation](crate) for a complete description of
+    /// possible format specifiers.
+    ///
+    /// # Allocations
+    ///
+    /// This `strftime` implementation makes no heap allocations on its own, but
+    /// the provided writer may allocate.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use strftime::fmt::strftime;
+    /// use strftime::Time;
+    ///
+    /// // Not shown: create a time implementation with the year 1970
+    /// // let time = ...;
+    /// # include!("mock.rs.in");
+    /// # fn main() -> Result<(), strftime::Error> {
+    /// # let time = MockTime { year: 1970, ..Default::default() };
+    /// assert_eq!(time.year(), 1970);
+    ///
+    /// let mut buf = String::new();
+    /// strftime(&time, "%Y", &mut buf)?;
+    /// assert_eq!(buf, "1970");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Can produce an [`Error`](crate::Error) when the formatting fails.
+    pub fn strftime(time: &impl Time, format: &str, buf: &mut dyn Write) -> Result<(), Error> {
+        TimeFormatter::new(time, format).fmt(&mut FmtWrite::new(buf))
     }
 }
 
