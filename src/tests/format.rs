@@ -882,3 +882,20 @@ fn test_format_empty() {
 
     check_format(&time, "", "");
 }
+
+#[test]
+fn test_format_copies_non_specifier_bytes() {
+    let times = [
+        MockTime::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, ""),
+        MockTime::new(-1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, ""),
+    ];
+
+    check_all(
+        &times,
+        "The year is '%Y' and the month is '%B' today.",
+        &[
+            "The year is '1970' and the month is 'January' today.",
+            "The year is '-1970' and the month is 'January' today.",
+        ],
+    );
+}
