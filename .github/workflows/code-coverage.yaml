@@ -40,7 +40,7 @@ jobs:
 
       - name: Generate coverage
         env:
-          LLVM_PROFILE_FILE: "strftime-%m.profraw"
+          LLVM_PROFILE_FILE: "strftime-ruby-%m.profraw"
           RUSTFLAGS: "-C instrument-coverage"
           # Unstable feature: https://github.com/rust-lang/rust/issues/56925
           RUSTDOCFLAGS: "-C instrument-coverage -Z unstable-options --persist-doctests target/debug/doctests"
@@ -49,10 +49,10 @@ jobs:
           cargo +nightly test --doc
 
       - name: Generate HTML report
-        run: grcov strftime*.profraw --source-dir . --binary-path target/debug -t html --filter covered -o target/coverage
+        run: grcov strftime-ruby*.profraw --source-dir . --binary-path target/debug -t html --filter covered -o target/coverage
 
       - name: Generate detailed JSON report
-        run: grcov strftime*.profraw --source-dir . --binary-path target/debug -t covdir --filter covered -o target/coverage/coverage.json
+        run: grcov strftime-ruby*.profraw --source-dir . --binary-path target/debug -t covdir --filter covered -o target/coverage/coverage.json
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@master
@@ -60,7 +60,7 @@ jobs:
         with:
           aws-region: us-west-2
           role-to-assume: arn:aws:iam::447522982029:role/gha-strftime-ruby-s3-backup-20220817011212567800000002
-          role-session-name: GitHubActionsSession@codecov
+          role-session-name: GitHubActionsRustCodeCoverage@strftime-ruby
 
       - name: Show AWS caller identity
         if: github.ref == 'refs/heads/trunk'
