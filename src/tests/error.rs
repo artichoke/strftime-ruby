@@ -30,6 +30,7 @@ fn test_error_display_is_non_empty() {
 fn test_error_debug_is_non_empty() {
     use alloc::format;
     use alloc::vec::Vec;
+    use core::fmt;
 
     use crate::Error;
 
@@ -37,7 +38,9 @@ fn test_error_debug_is_non_empty() {
     assert!(!format!("{:?}", Error::InvalidFormatString).is_empty());
     assert!(!format!("{:?}", Error::FormattedStringTooLarge).is_empty());
     assert!(!format!("{:?}", Error::WriteZero).is_empty());
-    assert!(!format!("{:?}", Error::FmtError).is_empty());
+
+    let fmt_error = fmt::Error;
+    assert!(!format!("{:?}", Error::FmtError(fmt_error)).is_empty());
 
     let try_reserve_error = Vec::<u8>::new().try_reserve(usize::MAX).unwrap_err();
     assert!(!format!("{:?}", Error::OutOfMemory(try_reserve_error)).is_empty());
