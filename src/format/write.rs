@@ -60,7 +60,7 @@ pub(crate) trait Write {
         match fmt::write(&mut output, fmt_args) {
             Ok(()) => Ok(()),
             Err(_) if output.error.is_err() => output.error,
-            Err(_) => Err(Error::FmtError),
+            Err(err) => Err(err.into()),
         }
     }
 }
@@ -164,7 +164,7 @@ mod tests {
         }
 
         let result = write!(&mut &mut [0u8; 1][..], "{S}");
-        assert!(matches!(result, Err(Error::FmtError)));
+        assert!(matches!(result, Err(Error::FmtError(_))));
     }
 
     #[cfg(feature = "std")]
