@@ -158,4 +158,13 @@ mod tests {
         assert!(!is_leap_year(2300));
         assert!(is_leap_year(2400));
     }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_week_start_debug_is_non_empty() {
+        use alloc::format;
+
+        assert!(!format!("{:?}", WeekStart::Sunday).is_empty());
+        assert!(!format!("{:?}", WeekStart::Monday).is_empty());
+    }
 }

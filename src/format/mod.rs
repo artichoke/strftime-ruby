@@ -931,4 +931,113 @@ mod tests {
         assert_eq!(year_width(99), 2);
         assert_eq!(year_width(100), 3);
     }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_flag_debug_is_non_empty() {
+        use alloc::format;
+
+        assert!(!format!("{:?}", Flag::LeftPadding).is_empty());
+        assert!(!format!("{:?}", Flag::ChangeCase).is_empty());
+        assert!(!format!("{:?}", Flag::UpperCase).is_empty());
+    }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_flags_debug_is_non_empty() {
+        use alloc::format;
+
+        assert!(!format!("{:?}", Flags::default()).is_empty());
+    }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_padding_debug_is_non_empty() {
+        use alloc::format;
+
+        assert!(!format!("{:?}", Padding::Left).is_empty());
+        assert!(!format!("{:?}", Padding::Spaces).is_empty());
+        assert!(!format!("{:?}", Padding::Zeros).is_empty());
+    }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_spec_debug_is_non_empty() {
+        use alloc::format;
+
+        let specs = [
+            Spec::Year4Digits,
+            Spec::YearDiv100,
+            Spec::YearRem100,
+            Spec::Month,
+            Spec::MonthName,
+            Spec::MonthNameAbbr,
+            Spec::MonthDayZero,
+            Spec::MonthDaySpace,
+            Spec::YearDay,
+            Spec::Hour24hZero,
+            Spec::Hour24hSpace,
+            Spec::Hour12hZero,
+            Spec::Hour12hSpace,
+            Spec::MeridianLower,
+            Spec::MeridianUpper,
+            Spec::Minute,
+            Spec::Second,
+            Spec::MilliSecond,
+            Spec::FractionalSecond,
+            Spec::TimeZoneOffsetHourMinute,
+            Spec::TimeZoneOffsetHourMinuteColon,
+            Spec::TimeZoneOffsetHourMinuteSecondColon,
+            Spec::TimeZoneOffsetColonMinimal,
+            Spec::TimeZoneName,
+            Spec::WeekDayName,
+            Spec::WeekDayNameAbbr,
+            Spec::WeekDayFrom1,
+            Spec::WeekDayFrom0,
+            Spec::YearIso8601,
+            Spec::YearIso8601Rem100,
+            Spec::WeekNumberIso8601,
+            Spec::WeekNumberFromSunday,
+            Spec::WeekNumberFromMonday,
+            Spec::SecondsSinceEpoch,
+            Spec::Newline,
+            Spec::Tabulation,
+            Spec::Percent,
+            Spec::CombinationDateTime,
+            Spec::CombinationDate,
+            Spec::CombinationIso8601,
+            Spec::CombinationVmsDate,
+            Spec::CombinationTime12h,
+            Spec::CombinationHourMinute24h,
+            Spec::CombinationTime24h,
+        ];
+        for spec in specs {
+            assert!(!format!("{:?}", spec).is_empty());
+        }
+    }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_utc_offset_debug_is_non_empty() {
+        use alloc::format;
+
+        assert!(!format!("{:?}", UtcOffset::new(0.0, 0, 0)).is_empty());
+    }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_piece_debug_is_non_empty() {
+        use alloc::format;
+
+        assert!(!format!(
+            "{:?}",
+            Piece::new(
+                None,
+                Padding::Spaces,
+                Flags::default(),
+                Spec::CombinationTime24h
+            )
+        )
+        .is_empty());
+    }
 }
