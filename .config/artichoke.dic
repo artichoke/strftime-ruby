@@ -10,10 +10,12 @@ VMS
 alloc
 callouts
 formatter
+io
 std
 struct/MS
 subslice
 tokio
 tuple
 unterminated
+vendored
 x-hgg-x
