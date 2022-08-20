@@ -29,6 +29,29 @@ fn check_all(times: &[MockTime<'_>], format: &str, all_expected: &[&str]) {
 }
 
 #[test]
+#[should_panic]
+#[rustfmt::skip]
+fn test_check_format_panics_on_error() {
+    let time = MockTime { year: 1111,  ..Default::default() };
+
+    check_format(&time, "'%Y'", "'1112'");
+}
+
+#[test]
+#[should_panic]
+#[rustfmt::skip]
+fn test_check_all_panics_on_error() {
+    let times = [
+        MockTime { year: -1111, ..Default::default() },
+        MockTime { year: -11,   ..Default::default() },
+        MockTime { year: 1,     ..Default::default() },
+        MockTime { year: 1111,  ..Default::default() },
+    ];
+
+    check_all(&times, "'%Y'",    &["'-1111'", "'-0011'", "'0001'",  "'1112'"]);
+}
+
+#[test]
 #[rustfmt::skip]
 fn test_format_year_4_digits() {
     let times = [
