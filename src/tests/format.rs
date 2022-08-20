@@ -48,7 +48,7 @@ fn test_check_all_panics_on_error() {
         MockTime { year: 1111,  ..Default::default() },
     ];
 
-    check_all(&times, "'%Y'",    &["'-1111'", "'-0011'", "'0001'",  "'1112'"]);
+    check_all(&times, "'%Y'", &["'-1111'", "'-0011'", "'0001'",  "'1112'"]);
 }
 
 #[test]
