@@ -9,11 +9,14 @@
 [![API](https://docs.rs/strftime-ruby/badge.svg)](https://docs.rs/strftime-ruby)
 [![API trunk](https://img.shields.io/badge/docs-trunk-blue.svg)](https://artichoke.github.io/strftime-ruby/strftime/)
 
-`strftime` parser and formatter. Used to implement [`Time#strftime`] from the
-Ruby Core library in [Artichoke Ruby][artichoke].
+`strftime-ruby` is a Ruby 3.1.2 compatible implementation of the
+[`Time#strftime`] method. The `strftime` routines provided by this crate are
+[POSIX-compatible], except for intentionally ignoring the `E` and `O` modified
+conversion specifiers.
 
 [`time#strftime`]: https://ruby-doc.org/core-3.1.2/Time.html#method-i-strftime
-[artichoke]: https://github.com/artichoke/artichoke
+[posix-compatible]:
+  https://pubs.opengroup.org/onlinepubs/9699919799/functions/strftime.html
 
 > Formats time according to the directives in the given format string.
 >
