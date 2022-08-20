@@ -94,3 +94,16 @@ impl<'a> Write for SizeLimiter<'a> {
         Ok(written)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_cursor_debug_is_non_empty() {
+        use alloc::format;
+
+        use super::Cursor;
+
+        assert!(!format!("{:?}", Cursor::new(&[])).is_empty());
+    }
+}
