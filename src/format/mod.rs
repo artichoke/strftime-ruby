@@ -965,55 +965,50 @@ mod tests {
     fn test_spec_debug_is_non_empty() {
         use alloc::format;
 
-        let specs = [
-            Spec::Year4Digits,
-            Spec::YearDiv100,
-            Spec::YearRem100,
-            Spec::Month,
-            Spec::MonthName,
-            Spec::MonthNameAbbr,
-            Spec::MonthDayZero,
-            Spec::MonthDaySpace,
-            Spec::YearDay,
-            Spec::Hour24hZero,
-            Spec::Hour24hSpace,
-            Spec::Hour12hZero,
-            Spec::Hour12hSpace,
-            Spec::MeridianLower,
-            Spec::MeridianUpper,
-            Spec::Minute,
-            Spec::Second,
-            Spec::MilliSecond,
-            Spec::FractionalSecond,
-            Spec::TimeZoneOffsetHourMinute,
-            Spec::TimeZoneOffsetHourMinuteColon,
-            Spec::TimeZoneOffsetHourMinuteSecondColon,
-            Spec::TimeZoneOffsetColonMinimal,
-            Spec::TimeZoneName,
-            Spec::WeekDayName,
-            Spec::WeekDayNameAbbr,
-            Spec::WeekDayFrom1,
-            Spec::WeekDayFrom0,
-            Spec::YearIso8601,
-            Spec::YearIso8601Rem100,
-            Spec::WeekNumberIso8601,
-            Spec::WeekNumberFromSunday,
-            Spec::WeekNumberFromMonday,
-            Spec::SecondsSinceEpoch,
-            Spec::Newline,
-            Spec::Tabulation,
-            Spec::Percent,
-            Spec::CombinationDateTime,
-            Spec::CombinationDate,
-            Spec::CombinationIso8601,
-            Spec::CombinationVmsDate,
-            Spec::CombinationTime12h,
-            Spec::CombinationHourMinute24h,
-            Spec::CombinationTime24h,
-        ];
-        for spec in specs {
-            assert!(!format!("{:?}", spec).is_empty());
-        }
+        assert!(!format!("{:?}", Spec::Year4Digits).is_empty());
+        assert!(!format!("{:?}", Spec::YearDiv100).is_empty());
+        assert!(!format!("{:?}", Spec::YearRem100).is_empty());
+        assert!(!format!("{:?}", Spec::Month).is_empty());
+        assert!(!format!("{:?}", Spec::MonthName).is_empty());
+        assert!(!format!("{:?}", Spec::MonthNameAbbr).is_empty());
+        assert!(!format!("{:?}", Spec::MonthDayZero).is_empty());
+        assert!(!format!("{:?}", Spec::MonthDaySpace).is_empty());
+        assert!(!format!("{:?}", Spec::YearDay).is_empty());
+        assert!(!format!("{:?}", Spec::Hour24hZero).is_empty());
+        assert!(!format!("{:?}", Spec::Hour24hSpace).is_empty());
+        assert!(!format!("{:?}", Spec::Hour12hZero).is_empty());
+        assert!(!format!("{:?}", Spec::Hour12hSpace).is_empty());
+        assert!(!format!("{:?}", Spec::MeridianLower).is_empty());
+        assert!(!format!("{:?}", Spec::MeridianUpper).is_empty());
+        assert!(!format!("{:?}", Spec::Minute).is_empty());
+        assert!(!format!("{:?}", Spec::Second).is_empty());
+        assert!(!format!("{:?}", Spec::MilliSecond).is_empty());
+        assert!(!format!("{:?}", Spec::FractionalSecond).is_empty());
+        assert!(!format!("{:?}", Spec::TimeZoneOffsetHourMinute).is_empty());
+        assert!(!format!("{:?}", Spec::TimeZoneOffsetHourMinuteColon).is_empty());
+        assert!(!format!("{:?}", Spec::TimeZoneOffsetHourMinuteSecondColon).is_empty());
+        assert!(!format!("{:?}", Spec::TimeZoneOffsetColonMinimal).is_empty());
+        assert!(!format!("{:?}", Spec::TimeZoneName).is_empty());
+        assert!(!format!("{:?}", Spec::WeekDayName).is_empty());
+        assert!(!format!("{:?}", Spec::WeekDayNameAbbr).is_empty());
+        assert!(!format!("{:?}", Spec::WeekDayFrom1).is_empty());
+        assert!(!format!("{:?}", Spec::WeekDayFrom0).is_empty());
+        assert!(!format!("{:?}", Spec::YearIso8601).is_empty());
+        assert!(!format!("{:?}", Spec::YearIso8601Rem100).is_empty());
+        assert!(!format!("{:?}", Spec::WeekNumberIso8601).is_empty());
+        assert!(!format!("{:?}", Spec::WeekNumberFromSunday).is_empty());
+        assert!(!format!("{:?}", Spec::WeekNumberFromMonday).is_empty());
+        assert!(!format!("{:?}", Spec::SecondsSinceEpoch).is_empty());
+        assert!(!format!("{:?}", Spec::Newline).is_empty());
+        assert!(!format!("{:?}", Spec::Tabulation).is_empty());
+        assert!(!format!("{:?}", Spec::Percent).is_empty());
+        assert!(!format!("{:?}", Spec::CombinationDateTime).is_empty());
+        assert!(!format!("{:?}", Spec::CombinationDate).is_empty());
+        assert!(!format!("{:?}", Spec::CombinationIso8601).is_empty());
+        assert!(!format!("{:?}", Spec::CombinationVmsDate).is_empty());
+        assert!(!format!("{:?}", Spec::CombinationTime12h).is_empty());
+        assert!(!format!("{:?}", Spec::CombinationHourMinute24h).is_empty());
+        assert!(!format!("{:?}", Spec::CombinationTime24h).is_empty());
     }
 
     #[cfg(feature = "alloc")]
@@ -1029,15 +1024,13 @@ mod tests {
     fn test_piece_debug_is_non_empty() {
         use alloc::format;
 
-        assert!(!format!(
-            "{:?}",
-            Piece::new(
-                None,
-                Padding::Spaces,
-                Flags::default(),
-                Spec::CombinationTime24h
-            )
-        )
-        .is_empty());
+        let piece = Piece::new(
+            None,
+            Padding::Spaces,
+            Flags::default(),
+            Spec::CombinationTime24h,
+        );
+
+        assert!(!format!("{:?}", piece).is_empty());
     }
 }

@@ -102,6 +102,8 @@ mod tests {
     fn test_cursor_debug_is_non_empty() {
         use alloc::format;
 
-        assert!(!format!("{:?}", super::Cursor::new(&[])).is_empty());
+        use super::Cursor;
+
+        assert!(!format!("{:?}", Cursor::new(&[])).is_empty());
     }
 }
