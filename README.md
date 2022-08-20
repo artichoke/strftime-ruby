@@ -37,7 +37,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-strftime-ruby = "0.1.0"
+strftime-ruby = "1.0.0"
 ```
 
 ## Crate features
