@@ -157,7 +157,7 @@ pub enum Error {
     /// [`std::io::ErrorKind::WriteZero`]: <https://doc.rust-lang.org/std/io/enum.ErrorKind.html#variant.WriteZero>
     WriteZero,
     /// Formatting error, corresponding to [`core::fmt::Error`].
-    FmtError,
+    FmtError(core::fmt::Error),
     /// An allocation failure has occurred in either [`bytes::strftime`] or
     /// [`string::strftime`].
     #[cfg(feature = "alloc")]
@@ -176,7 +176,7 @@ impl core::fmt::Display for Error {
             Error::InvalidFormatString => f.write_str("invalid format string"),
             Error::FormattedStringTooLarge => f.write_str("formatted string too large"),
             Error::WriteZero => f.write_str("failed to write the whole buffer"),
-            Error::FmtError => f.write_str("formatter error"),
+            Error::FmtError(_) => f.write_str("formatter error"),
             #[cfg(feature = "alloc")]
             Error::OutOfMemory(_) => f.write_str("allocation failure"),
             #[cfg(feature = "std")]
@@ -190,6 +190,7 @@ impl core::fmt::Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
+            Self::FmtError(inner) => Some(inner),
             Self::OutOfMemory(inner) => Some(inner),
             Self::IoError(inner) => Some(inner),
             _ => None,
@@ -198,8 +199,8 @@ impl std::error::Error for Error {
 }
 
 impl From<core::fmt::Error> for Error {
-    fn from(_: core::fmt::Error) -> Self {
-        Self::FmtError
+    fn from(err: core::fmt::Error) -> Self {
+        Self::FmtError(err)
     }
 }
 

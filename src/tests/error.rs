@@ -3,6 +3,7 @@
 fn test_error_display_is_non_empty() {
     use alloc::string::ToString;
     use alloc::vec::Vec;
+    use core::fmt;
 
     use crate::Error;
 
@@ -10,7 +11,9 @@ fn test_error_display_is_non_empty() {
     assert!(!Error::InvalidFormatString.to_string().is_empty());
     assert!(!Error::FormattedStringTooLarge.to_string().is_empty());
     assert!(!Error::WriteZero.to_string().is_empty());
-    assert!(!Error::FmtError.to_string().is_empty());
+
+    let fmt_error = fmt::Error;
+    assert!(!Error::FmtError(fmt_error).to_string().is_empty());
 
     let try_reserve_error = Vec::<u8>::new().try_reserve(usize::MAX).unwrap_err();
     assert!(!Error::OutOfMemory(try_reserve_error).to_string().is_empty());
@@ -48,18 +51,20 @@ fn test_error_from_io_error() {
 fn test_error_from_fmt_error() {
     use crate::Error;
 
-    assert!(matches!(core::fmt::Error.into(), Error::FmtError));
+    assert!(matches!(core::fmt::Error.into(), Error::FmtError(_)));
 }
 
 #[cfg(feature = "std")]
 #[test]
 fn test_error_source_returns_inner_error() {
     use std::error::Error as _;
+    use std::fmt;
     use std::io::Write;
     use std::vec::Vec;
 
     use crate::Error;
 
+    let fmt_error = fmt::Error;
     let try_reserve_error = Vec::<u8>::new().try_reserve(usize::MAX).unwrap_err();
     let io_error = (&mut &mut [0u8; 0][..]).write_all(b"1").unwrap_err();
 
@@ -68,9 +73,12 @@ fn test_error_source_returns_inner_error() {
     assert!(Error::InvalidFormatString.source().is_none());
     assert!(Error::FormattedStringTooLarge.source().is_none());
     assert!(Error::WriteZero.source().is_none());
-    assert!(Error::FmtError.source().is_none());
 
     // Error variants with inner error
+    let err = Error::FmtError(fmt_error);
+    let err_source = err.source().unwrap().downcast_ref();
+    assert_eq!(err_source, Some(&fmt_error));
+
     let err = Error::OutOfMemory(try_reserve_error.clone());
     let err_source = err.source().unwrap().downcast_ref();
     assert_eq!(err_source, Some(&try_reserve_error));
