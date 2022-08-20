@@ -27,6 +27,30 @@ fn test_error_display_is_non_empty() {
 
 #[cfg(feature = "alloc")]
 #[test]
+fn test_error_debug_is_non_empty() {
+    use alloc::format;
+    use alloc::vec::Vec;
+
+    use crate::Error;
+
+    assert!(!format!("{:?}", Error::InvalidTime).is_empty());
+    assert!(!format!("{:?}", Error::InvalidFormatString).is_empty());
+    assert!(!format!("{:?}", Error::FormattedStringTooLarge).is_empty());
+    assert!(!format!("{:?}", Error::WriteZero).is_empty());
+    assert!(!format!("{:?}", Error::FmtError).is_empty());
+
+    let try_reserve_error = Vec::<u8>::new().try_reserve(usize::MAX).unwrap_err();
+    assert!(!format!("{:?}", Error::OutOfMemory(try_reserve_error)).is_empty());
+
+    #[cfg(feature = "std")]
+    {
+        let io_error = std::io::Write::write_all(&mut &mut [0u8; 0][..], b"1").unwrap_err();
+        assert!(!format!("{:?}", Error::IoError(io_error)).is_empty());
+    }
+}
+
+#[cfg(feature = "alloc")]
+#[test]
 fn test_error_from_try_reserve_error() {
     use alloc::vec::Vec;
 
