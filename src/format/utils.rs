@@ -4,7 +4,7 @@ use super::write::Write;
 use crate::Error;
 
 /// A `Cursor` contains a slice of a buffer.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct Cursor<'a> {
     /// Slice representing the remaining data to be read.
     remaining: &'a [u8],

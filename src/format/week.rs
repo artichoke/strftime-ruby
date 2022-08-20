@@ -1,7 +1,7 @@
 //! Module containing week-related items.
 
 /// Start day of the week.
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone)]
 pub(crate) enum WeekStart {
     /// Sunday.
     Sunday = 0,

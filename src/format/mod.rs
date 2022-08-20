@@ -90,7 +90,7 @@ const _: () = {
 
 /// Formatting flag.
 #[repr(u8)]
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone)]
 enum Flag {
     /// Use left padding, removing all other padding options in most cases.
     LeftPadding = 1 << 0,
@@ -101,7 +101,7 @@ enum Flag {
 }
 
 /// Combination of formatting flags.
-#[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Default, Copy, Clone)]
 struct Flags(u8);
 
 impl Flags {
@@ -126,7 +126,7 @@ impl Flags {
 }
 
 /// Padding method.
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug)]
 enum Padding {
     /// Left padding.
     Left,
@@ -137,7 +137,7 @@ enum Padding {
 }
 
 /// Formatting specifier.
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone)]
 enum Spec {
     /// `"%Y"`: Year with century if provided, zero-padded to at least 4 digits
     /// plus the possible negative sign.
@@ -302,7 +302,7 @@ impl Piece {
     ) -> Result<(), Error> {
         if self.flags.contains(Flag::LeftPadding) {
             write!(f, "{value}")
-        } else if self.padding == Padding::Spaces {
+        } else if let Padding::Spaces = self.padding {
             let width = self.width.unwrap_or(default_width);
             write!(f, "{value: >width$}")
         } else {
@@ -320,7 +320,7 @@ impl Piece {
     ) -> Result<(), Error> {
         if self.flags.contains(Flag::LeftPadding) {
             write!(f, "{value}")
-        } else if self.padding == Padding::Zeros {
+        } else if let Padding::Zeros = self.padding {
             let width = self.width.unwrap_or(default_width);
             write!(f, "{value:0width$}")
         } else {
@@ -353,7 +353,7 @@ impl Piece {
             Some(width) => {
                 if self.flags.contains(Flag::LeftPadding) {
                     write!(f, "{s}")
-                } else if self.padding == Padding::Zeros {
+                } else if let Padding::Zeros = self.padding {
                     write!(f, "{s:0>width$}")
                 } else {
                     write!(f, "{s: >width$}")
