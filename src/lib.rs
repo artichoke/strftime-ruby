@@ -124,11 +124,6 @@ extern crate std;
 #[cfg(feature = "alloc")]
 use alloc::collections::TryReserveError;
 
-// Ensure code blocks in `README.md` compile
-#[cfg(all(doctest, feature = "std"))]
-#[doc = include_str!("../README.md")]
-mod readme {}
-
 mod format;
 
 #[cfg(test)]
@@ -518,3 +513,10 @@ pub mod io {
         TimeFormatter::new(time, format).fmt(&mut IoWrite::new(buf))
     }
 }
+
+// Ensure code blocks in `README.md` compile.
+// This should be kept at the end of the file,
+// in order to not interfere with code coverage.
+#[cfg(all(doctest, feature = "std"))]
+#[doc = include_str!("../README.md")]
+mod readme {}
