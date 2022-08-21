@@ -515,8 +515,9 @@ pub mod io {
 }
 
 // Ensure code blocks in `README.md` compile.
-// This should be kept at the end of the file,
-// in order to not interfere with code coverage.
+//
+// This module declaration should be kept at the end of the file, in order to
+// not interfere with code coverage.
 #[cfg(all(doctest, feature = "std"))]
 #[doc = include_str!("../README.md")]
 mod readme {}
