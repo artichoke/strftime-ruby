@@ -764,14 +764,13 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
                 break;
             }
 
-            match Self::parse_spec(&mut cursor)? {
-                Some(piece) => piece.fmt(&mut f, self.time)?,
-                None => {
-                    // No valid format specifier was found
-                    let remaining_after = cursor.remaining();
-                    let text = &remaining_before[..remaining_before.len() - remaining_after.len()];
-                    f.write_all(text)?;
-                }
+            if let Some(piece) = Self::parse_spec(&mut cursor)? {
+                piece.fmt(&mut f, self.time)?;
+            } else {
+                // No valid format specifier was found
+                let remaining_after = cursor.remaining();
+                let text = &remaining_before[..remaining_before.len() - remaining_after.len()];
+                f.write_all(text)?;
             }
         }
 
