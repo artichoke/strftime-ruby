@@ -903,7 +903,8 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
 
 /// Compute the width of the string representation of a year.
 fn year_width(year: i32) -> usize {
-    let mut n = if year <= 0 { 1 } else { 0 };
+    const MINUS_SIGN_WIDTH: usize = 1;
+    let mut n = if year <= 0 { MINUS_SIGN_WIDTH } else { 0 };
     let mut val = year;
     while val != 0 {
         val /= 10;
