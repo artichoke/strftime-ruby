@@ -330,6 +330,7 @@ impl Piece {
     }
 
     /// Format nanoseconds with the specified precision.
+    #[allow(clippy::uninlined_format_args)] // for readability and symmetry between if branches
     fn format_nanoseconds(
         &self,
         f: &mut SizeLimiter<'_>,
@@ -1031,6 +1032,6 @@ mod tests {
             Spec::CombinationTime24h,
         );
 
-        assert!(!format!("{:?}", piece).is_empty());
+        assert!(!format!("{piece:?}").is_empty());
     }
 }
