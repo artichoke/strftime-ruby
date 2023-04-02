@@ -922,3 +922,34 @@ fn test_format_copies_non_specifier_bytes() {
         ],
     );
 }
+
+#[test]
+fn test_chrono_pr_966_week_numbers() {
+    let times = [
+        MockTime::new(2020, 1, 12, 0, 0, 0, 0, 0, 12, 0, false, 0, ""),
+        MockTime::new(2019, 1, 13, 0, 0, 0, 0, 0, 13, 0, false, 0, ""),
+        MockTime::new(2007, 12, 31, 0, 0, 0, 0, 1, 365, 0, false, 0, ""),
+    ];
+
+    check_all(
+        &times,
+        "%Y-%W-%w",
+        &[
+            // ```
+            // [3.1.2] > Time.utc(2020, 1, 12).strftime("%Y-%W-%w")
+            // => "2020-01-0"
+            // ```
+            "2020-01-0",
+            // ```
+            // [3.1.2] > Time.utc(2019, 1, 13).strftime("%Y-%W-%w")
+            // => "2019-01-0"
+            // ```
+            "2019-01-0",
+            // ```
+            // [3.1.2] > Time.utc(2007, 12, 31).strftime("%Y-%W-%w")
+            // => "2007-53-1"
+            // ```
+            "2007-53-1",
+        ],
+    );
+}
