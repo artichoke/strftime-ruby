@@ -458,6 +458,7 @@ pub mod string {
     /// # Errors
     ///
     /// Can produce an [`Error`](crate::Error) when the formatting fails.
+    #[allow(clippy::missing_panics_doc)]
     pub fn strftime(time: &impl Time, format: &str) -> Result<String, Error> {
         let mut buf = Vec::new();
         TimeFormatter::new(time, format).fmt(&mut buf)?;
