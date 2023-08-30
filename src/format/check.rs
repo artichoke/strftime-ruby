@@ -121,7 +121,7 @@ mod tests {
 
     fn check<T>(ok: bool, result: &Result<T, Error>) {
         if ok {
-            assert!(matches!(result, Ok(_)));
+            assert!(result.is_ok());
         } else {
             assert!(matches!(result, Err(Error::InvalidTime)));
         }

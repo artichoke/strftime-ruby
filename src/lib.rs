@@ -297,7 +297,7 @@ pub mod buffered {
     ///
     /// # Errors
     ///
-    /// Can produce an [`Error`](crate::Error) when the formatting fails.
+    /// Can produce an [`Error`] when the formatting fails.
     pub fn strftime<'a>(
         time: &impl Time,
         format: &[u8],
@@ -354,7 +354,7 @@ pub mod fmt {
     ///
     /// # Errors
     ///
-    /// Can produce an [`Error`](crate::Error) when the formatting fails.
+    /// Can produce an [`Error`] when the formatting fails.
     pub fn strftime(time: &impl Time, format: &str, buf: &mut dyn Write) -> Result<(), Error> {
         TimeFormatter::new(time, format).fmt(&mut FmtWrite::new(buf))
     }
@@ -404,7 +404,7 @@ pub mod bytes {
     ///
     /// # Errors
     ///
-    /// Can produce an [`Error`](crate::Error) when the formatting fails.
+    /// Can produce an [`Error`] when the formatting fails.
     pub fn strftime(time: &impl Time, format: &[u8]) -> Result<Vec<u8>, Error> {
         let mut buf = Vec::new();
         TimeFormatter::new(time, format).fmt(&mut buf)?;
@@ -457,7 +457,8 @@ pub mod string {
     ///
     /// # Errors
     ///
-    /// Can produce an [`Error`](crate::Error) when the formatting fails.
+    /// Can produce an [`Error`] when the formatting fails.
+    #[allow(clippy::missing_panics_doc)]
     pub fn strftime(time: &impl Time, format: &str) -> Result<String, Error> {
         let mut buf = Vec::new();
         TimeFormatter::new(time, format).fmt(&mut buf)?;
@@ -508,7 +509,7 @@ pub mod io {
     ///
     /// # Errors
     ///
-    /// Can produce an [`Error`](crate::Error) when the formatting fails.
+    /// Can produce an [`Error`] when the formatting fails.
     pub fn strftime(time: &impl Time, format: &[u8], buf: &mut dyn Write) -> Result<(), Error> {
         TimeFormatter::new(time, format).fmt(&mut IoWrite::new(buf))
     }
