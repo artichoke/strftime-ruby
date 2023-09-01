@@ -30,7 +30,7 @@ jobs:
       CARGO_NET_GIT_FETCH_WITH_CLI: true
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
 
       - name: Install Rust toolchain
         uses: artichoke/setup-rust/build-and-test@v1.10.0
@@ -68,7 +68,7 @@ jobs:
       CARGO_NET_GIT_FETCH_WITH_CLI: true
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
 
       - name: Install Rust toolchain
         uses: artichoke/setup-rust/build-and-test@v1.10.0
@@ -99,7 +99,7 @@ jobs:
       CARGO_NET_GIT_FETCH_WITH_CLI: true
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
 
       - name: Install Rust toolchain
         uses: artichoke/setup-rust/lint-and-format@v1.10.0
@@ -117,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
 
       - name: Install Ruby toolchain
         uses: ruby/setup-ruby@250fcd6a742febb1123a77a841497ccaa8b9e939 # v1.152.0
@@ -133,7 +133,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
 
       - name: Format with prettier
         run: npx prettier --check '**/*'
