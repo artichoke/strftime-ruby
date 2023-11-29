@@ -39,6 +39,7 @@ GEM
 
 PLATFORMS
   ruby
+  x64-mingw-ucrt
 
 DEPENDENCIES
   bundler-audit (~> 0.9)
