@@ -50,6 +50,7 @@ pub(crate) const fn assert_to_ascii_uppercase(table: &[&str], upper_table: &[&st
 }
 
 #[cfg(test)]
+#[allow(clippy::should_panic_without_expect)]
 mod tests {
     use super::*;
 
