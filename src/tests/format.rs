@@ -149,6 +149,7 @@ fn test_format_month_name_abbr() {
     check_all(&times, "'%b'",      &["'Jul'"]);
     check_all(&times, "'%1b'",     &["'Jul'"]);
     check_all(&times, "'%6b'",     &["'   Jul'"]);
+    check_all(&times, "'%##b'",    &["'JUL'"]);
     check_all(&times, "'%-_#^6b'", &["'JUL'"]);
     check_all(&times, "'%-0^6b'",  &["'JUL'"]);
     check_all(&times, "'%0_#6b'",  &["'   JUL'"]);
@@ -252,34 +253,34 @@ fn test_format_hour_24h_space() {
 #[rustfmt::skip]
 fn test_format_hour_12h_zero() {
     let times = [
-        MockTime { hour: 13, ..Default::default() },
+        MockTime { hour: 14, ..Default::default() },
         MockTime { hour: 0,  ..Default::default() },
     ];
 
-    check_all(&times, "'%I'",   &["'01'",   "'12'"]);
-    check_all(&times, "'%1I'",  &["'1'",    "'12'"]);
-    check_all(&times, "'%4I'",  &["'0001'", "'0012'"]);
-    check_all(&times, "'%-_I'", &["'1'",    "'12'"]);
-    check_all(&times, "'%-0I'", &["'1'",    "'12'"]);
-    check_all(&times, "'%0_I'", &["' 1'",   "'12'"]);
-    check_all(&times, "'%_0I'", &["'01'",   "'12'"]);
+    check_all(&times, "'%I'",   &["'02'",   "'12'"]);
+    check_all(&times, "'%1I'",  &["'2'",    "'12'"]);
+    check_all(&times, "'%4I'",  &["'0002'", "'0012'"]);
+    check_all(&times, "'%-_I'", &["'2'",    "'12'"]);
+    check_all(&times, "'%-0I'", &["'2'",    "'12'"]);
+    check_all(&times, "'%0_I'", &["' 2'",   "'12'"]);
+    check_all(&times, "'%_0I'", &["'02'",   "'12'"]);
 }
 
 #[test]
 #[rustfmt::skip]
 fn test_format_hour_12h_space() {
     let times = [
-        MockTime { hour: 13, ..Default::default() },
+        MockTime { hour: 14, ..Default::default() },
         MockTime { hour: 0,  ..Default::default() },
     ];
 
-    check_all(&times, "'%l'",   &["' 1'",   "'12'"]);
-    check_all(&times, "'%1l'",  &["'1'",    "'12'"]);
-    check_all(&times, "'%4l'",  &["'   1'", "'  12'"]);
-    check_all(&times, "'%-_l'", &["'1'",    "'12'"]);
-    check_all(&times, "'%-0l'", &["'1'",    "'12'"]);
-    check_all(&times, "'%0_l'", &["' 1'",   "'12'"]);
-    check_all(&times, "'%_0l'", &["'01'",   "'12'"]);
+    check_all(&times, "'%l'",   &["' 2'",   "'12'"]);
+    check_all(&times, "'%1l'",  &["'2'",    "'12'"]);
+    check_all(&times, "'%4l'",  &["'   2'", "'  12'"]);
+    check_all(&times, "'%-_l'", &["'2'",    "'12'"]);
+    check_all(&times, "'%-0l'", &["'2'",    "'12'"]);
+    check_all(&times, "'%0_l'", &["' 2'",   "'12'"]);
+    check_all(&times, "'%_0l'", &["'02'",   "'12'"]);
 }
 
 #[test]
@@ -709,17 +710,17 @@ fn test_format_percent() {
 #[rustfmt::skip]
 fn test_format_combination_date_time() {
     let times = [
-        MockTime::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, ""),
-        MockTime::new(-1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, ""),
+        MockTime::new(971, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, ""),
+        MockTime::new(-971, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, ""),
     ];
 
-    check_all(&times, "'%c'",       &["'Thu Jan  1 00:00:00 1970'",       "'Thu Jan  1 00:00:00 -1970'"]);
-    check_all(&times, "'%1c'",      &["'Thu Jan  1 00:00:00 1970'",       "'Thu Jan  1 00:00:00 -1970'"]);
-    check_all(&times, "'%30c'",     &["'      Thu Jan  1 00:00:00 1970'", "'     Thu Jan  1 00:00:00 -1970'"]);
-    check_all(&times, "'%-^_#30c'", &["'      THU JAN  1 00:00:00 1970'", "'     THU JAN  1 00:00:00 -1970'"]);
-    check_all(&times, "'%-0^30c'",  &["'000000THU JAN  1 00:00:00 1970'", "'00000THU JAN  1 00:00:00 -1970'"]);
-    check_all(&times, "'%0_#30c'",  &["'      Thu Jan  1 00:00:00 1970'", "'     Thu Jan  1 00:00:00 -1970'"]);
-    check_all(&times, "'%_030c'",   &["'000000Thu Jan  1 00:00:00 1970'", "'00000Thu Jan  1 00:00:00 -1970'"]);
+    check_all(&times, "'%c'",       &["'Thu Jan  1 00:00:00 0971'",       "'Thu Jan  1 00:00:00 -0971'"]);
+    check_all(&times, "'%1c'",      &["'Thu Jan  1 00:00:00 0971'",       "'Thu Jan  1 00:00:00 -0971'"]);
+    check_all(&times, "'%30c'",     &["'      Thu Jan  1 00:00:00 0971'", "'     Thu Jan  1 00:00:00 -0971'"]);
+    check_all(&times, "'%-^_#30c'", &["'      THU JAN  1 00:00:00 0971'", "'     THU JAN  1 00:00:00 -0971'"]);
+    check_all(&times, "'%-0^30c'",  &["'000000THU JAN  1 00:00:00 0971'", "'00000THU JAN  1 00:00:00 -0971'"]);
+    check_all(&times, "'%0_#30c'",  &["'      Thu Jan  1 00:00:00 0971'", "'     Thu Jan  1 00:00:00 -0971'"]);
+    check_all(&times, "'%_030c'",   &["'000000Thu Jan  1 00:00:00 0971'", "'00000Thu Jan  1 00:00:00 -0971'"]);
 }
 
 #[test]
@@ -751,17 +752,17 @@ fn test_format_combination_date() {
 #[rustfmt::skip]
 fn test_format_combination_iso_8601() {
     let times = [
-        MockTime { year: 1234,  month: 5, day: 6, ..Default::default() },
-        MockTime { year: -1234, month: 5, day: 6, ..Default::default() },
+        MockTime { year: 234,  month: 5, day: 6, ..Default::default() },
+        MockTime { year: -234, month: 5, day: 6, ..Default::default() },
     ];
 
-    check_all(&times, "'%F'",       &["'1234-05-06'",   "'-1234-05-06'"]);
-    check_all(&times, "'%1F'",      &["'1234-05-06'",   "'-1234-05-06'"]);
-    check_all(&times, "'%12F'",     &["'  1234-05-06'", "' -1234-05-06'"]);
-    check_all(&times, "'%-^_#12F'", &["'  1234-05-06'", "' -1234-05-06'"]);
-    check_all(&times, "'%-0^12F'",  &["'001234-05-06'", "'0-1234-05-06'"]);
-    check_all(&times, "'%0_#12F'",  &["'  1234-05-06'", "' -1234-05-06'"]);
-    check_all(&times, "'%_012F'",   &["'001234-05-06'", "'0-1234-05-06'"]);
+    check_all(&times, "'%F'",       &["'0234-05-06'",   "'-0234-05-06'"]);
+    check_all(&times, "'%1F'",      &["'0234-05-06'",   "'-0234-05-06'"]);
+    check_all(&times, "'%12F'",     &["'  0234-05-06'", "' -0234-05-06'"]);
+    check_all(&times, "'%-^_#12F'", &["'  0234-05-06'", "' -0234-05-06'"]);
+    check_all(&times, "'%-0^12F'",  &["'000234-05-06'", "'0-0234-05-06'"]);
+    check_all(&times, "'%0_#12F'",  &["'  0234-05-06'", "' -0234-05-06'"]);
+    check_all(&times, "'%_012F'",   &["'000234-05-06'", "'0-0234-05-06'"]);
 }
 
 #[test]
