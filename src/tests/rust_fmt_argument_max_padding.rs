@@ -18,7 +18,12 @@
 
 #![allow(clippy::unreadable_literal)]
 
-use crate::format::TimeFormatter;
+#[cfg(feature = "alloc")]
+use {
+    crate::format::TimeFormatter,
+    alloc::{format, vec},
+};
+
 use crate::Error;
 
 use super::{check_all, get_format_err, get_format_err_bytes, MockTime};
@@ -129,9 +134,6 @@ fn test_rust_136932_reduce_fmt_argument_width_and_precision_fuzzer_failures_byte
 #[test]
 #[cfg(feature = "alloc")]
 fn test_format_specifiers_large_width_success() {
-    use alloc::format;
-    use alloc::vec;
-
     // List of format specifiers that take a width.
     //
     // For each, we construct a format string with a width of 131,072. The
@@ -196,8 +198,6 @@ fn test_format_specifiers_large_width_success() {
 #[test]
 #[cfg(feature = "alloc")]
 fn test_format_specifiers_int_max_fail() {
-    use alloc::format;
-
     // List of format specifiers that take a width.
     //
     // Test that using a width equal to `INT_MAX` (2,147,483,647) causes an
