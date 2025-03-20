@@ -233,10 +233,12 @@ fn test_format_specifiers_int_max_fail() {
         let fmt_str = format!("'%{width}{spec}'");
         // Use a very small buffer to force a write failure.
         let mut buf = [0u8; 100];
-        let result = TimeFormatter::new(&time, fmt_str.as_bytes()).fmt(&mut &mut buf[..]);
+        let err = TimeFormatter::new(&time, fmt_str.as_bytes())
+            .fmt(&mut &mut buf[..])
+            .unwrap_err();
         assert!(
-            matches!(result, Err(Error::WriteZero)),
-            "Expected an error for specifier '{spec}' with width {width} but got success",
+            matches!(err, Error::WriteZero),
+            "Expected write failure for specifier '{spec}' with width {width} but got unexpected error: {err:?}",
         );
     }
 }
