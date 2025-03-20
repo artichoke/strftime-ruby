@@ -6,6 +6,7 @@ mod utils;
 mod week;
 mod write;
 
+use core::ffi::c_int;
 use core::fmt;
 use core::num::IntErrorKind;
 use core::str;
@@ -20,13 +21,6 @@ use write::Write;
 pub(crate) use write::FmtWrite;
 #[cfg(feature = "std")]
 pub(crate) use write::IoWrite;
-
-/// Alias to a `c_int`.
-#[cfg(feature = "std")]
-type Int = std::os::raw::c_int;
-/// Fallback alias to a `c_int`.
-#[cfg(not(feature = "std"))]
-type Int = i32;
 
 /// List of weekday names.
 const DAYS: [&str; 7] = [
@@ -810,7 +804,7 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
             .expect("reading ASCII digits should yield a valid UTF-8 slice");
 
         let width = match width_digits.parse::<usize>() {
-            Ok(width) if Int::try_from(width).is_ok() => Some(width),
+            Ok(width) if c_int::try_from(width).is_ok() => Some(width),
             Err(err) if *err.kind() == IntErrorKind::Empty => None,
             _ => return Ok(None),
         };
