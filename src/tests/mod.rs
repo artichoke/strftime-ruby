@@ -39,7 +39,7 @@ fn check_all(times: &[MockTime<'_>], format: &str, all_expected: &[&str]) {
 }
 
 #[test]
-#[should_panic]
+#[should_panic = "assertion `left == right` failed"]
 #[rustfmt::skip]
 fn test_check_format_panics_on_error() {
     let time = MockTime { year: 1111,  ..Default::default() };
@@ -48,7 +48,7 @@ fn test_check_format_panics_on_error() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic = "assertion `left == right` failed"]
 #[rustfmt::skip]
 fn test_check_all_panics_on_error() {
     let times = [

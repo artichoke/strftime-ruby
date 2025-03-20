@@ -1,5 +1,3 @@
-#![allow(clippy::should_panic_without_expect)]
-
 use crate::format::TimeFormatter;
 use crate::Error;
 
