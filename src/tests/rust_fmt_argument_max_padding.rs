@@ -26,7 +26,7 @@ use {
 
 use crate::Error;
 
-use super::{check_all, get_format_err, get_format_err_bytes, MockTime};
+use super::{check_all, MockTime};
 
 #[test]
 fn test_larger_than_int_max_formats_are_returned_verbatim() {
@@ -151,7 +151,7 @@ fn test_format_specifiers_int_max_fail() {
             .fmt(&mut &mut buf[..])
             .unwrap_err();
         assert!(
-            matches!(err, Error::WriteZero),
+            matches!(err, Error::FormattedStringTooLarge),
             "Expected write failure for specifier '{spec}' with width {width} but got unexpected error: {err:?}",
         );
     }
