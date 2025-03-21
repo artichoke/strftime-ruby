@@ -21,10 +21,9 @@
 #[cfg(feature = "alloc")]
 use {
     crate::format::TimeFormatter,
+    crate::Error,
     alloc::{format, vec},
 };
-
-use crate::Error;
 
 use super::{check_all, MockTime};
 
