@@ -1,18 +1,24 @@
 [package]
 name = "strftime-ruby"
 # remember to set `html_root_url` in `src/lib.rs`.
-version = "1.1.0"
+version = "1.2.0"
 authors = ["Ryan Lopopolo <rjl@hyperbo.la>", "x-hgg-x"]
 license = "MIT"
 edition = "2021"
-rust-version = "1.76.0"
+rust-version = "1.84.0"
 readme = "README.md"
 repository = "https://github.com/artichoke/strftime-ruby"
 documentation = "https://docs.rs/strftime-ruby"
 homepage = "https://github.com/artichoke/strftime-ruby"
 description = "Ruby `Time#strftime` parser and formatter"
 keywords = ["ruby", "strftime", "time"]
-categories = ["date-and-time", "no-std", "no-std::no-alloc", "parser-implementations", "value-formatting"]
+categories = [
+    "date-and-time",
+    "no-std",
+    "no-std::no-alloc",
+    "parser-implementations",
+    "value-formatting",
+]
 include = ["/src/**/*", "/tests/**/*", "/LICENSE", "/README.md"]
 
 [lib]

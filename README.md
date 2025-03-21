@@ -37,7 +37,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-strftime-ruby = "1.1.0"
+strftime-ruby = "1.2.0"
 ```
 
 ## Crate features
@@ -64,7 +64,7 @@ All features are enabled by default.
 
 ### Minimum Supported Rust Version
 
-This crate requires at least Rust 1.76.0. This version can be bumped in minor
+This crate requires at least Rust 1.84.0. This version can be bumped in minor
 releases.
 
 ## License
