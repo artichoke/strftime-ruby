@@ -13,12 +13,6 @@ fn get_format_err(time: &MockTime<'_>, format: &str) -> Error {
         .unwrap_err()
 }
 
-fn get_format_err_bytes(time: &MockTime<'_>, format: &[u8]) -> Error {
-    TimeFormatter::new(time, format)
-        .fmt(&mut &mut [0u8; 100][..])
-        .unwrap_err()
-}
-
 fn check_format(time: &MockTime<'_>, format: &str, expected: &str) {
     const SIZE: usize = 100;
     let mut buf = [0u8; SIZE];

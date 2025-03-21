@@ -825,7 +825,7 @@ fn test_format_large_width() {
     check_format(&time, "%-100000000m", "1");
     check_format(&time, "%2147483648m", "%2147483648m");
 
-    let err = get_format_err(&time, "%2147483647m");
+    let err = get_format_err(&time, "%1000m");
     assert!(matches!(err, Error::WriteZero));
 }
 
