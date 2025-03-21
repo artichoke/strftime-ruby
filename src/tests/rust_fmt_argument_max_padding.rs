@@ -4,7 +4,7 @@
 //! to `u16::MAX`, to improve memory layout and prevent silent truncation bugs
 //! on cross-compilation targets. This change caused previously valid dynamic
 //! width values exceeding `u16::MAX` to panic at runtime. (See
-//! rust-lang/rust#136932 and artichoke/strftime-ruby#2f0ab4a).
+//! rust-lang/rust#136932).
 //!
 //! These test cases specifically target edge conditions revealed by fuzzing
 //! strftime-ruby, ensuring we handle excessively large padding values without
