@@ -81,11 +81,31 @@ impl<'a> SizeLimiter<'a> {
             count: 0,
         }
     }
+
+    /// Pad with the specified character.
+    pub(crate) fn pad(&mut self, c: u8, n: usize) -> Result<(), Error> {
+        if self.count.saturating_add(n) > self.size_limit {
+            return Err(Error::FormattedStringTooLarge);
+        }
+
+        let buffer = [c; 1024];
+        let mut remaining = n;
+
+        while remaining > 0 {
+            let size = remaining.min(1024);
+            self.inner.write_all(&buffer[..size])?;
+            remaining -= size;
+        }
+
+        self.count += n;
+
+        Ok(())
+    }
 }
 
 impl Write for SizeLimiter<'_> {
     fn write(&mut self, buf: &[u8]) -> Result<usize, Error> {
-        if self.count + buf.len() > self.size_limit {
+        if self.count.saturating_add(buf.len()) > self.size_limit {
             return Err(Error::FormattedStringTooLarge);
         }
 

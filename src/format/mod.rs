@@ -297,10 +297,10 @@ impl Piece {
         if self.flags.contains(Flag::LeftPadding) {
             write!(f, "{value}")
         } else if self.padding == Padding::Spaces {
-            let width = self.width.unwrap_or(default_width);
+            let width = self.pad_width(f, b' ', default_width)?;
             write!(f, "{value: >width$}")
         } else {
-            let width = self.width.unwrap_or(default_width);
+            let width = self.pad_width(f, b'0', default_width)?;
             write!(f, "{value:0width$}")
         }
     }
@@ -315,16 +315,24 @@ impl Piece {
         if self.flags.contains(Flag::LeftPadding) {
             write!(f, "{value}")
         } else if self.padding == Padding::Zeros {
-            let width = self.width.unwrap_or(default_width);
+            let width = self.pad_width(f, b'0', default_width)?;
             write!(f, "{value:0width$}")
         } else {
-            let width = self.width.unwrap_or(default_width);
+            let width = self.pad_width(f, b' ', default_width)?;
             write!(f, "{value: >width$}")
         }
     }
 
+    /// Returns the width to use for the padding.
+    ///
+    /// Prints any excessive padding directly.
+    fn pad_width(&self, f: &mut SizeLimiter<'_>, pad: u8, default: usize) -> Result<usize, Error> {
+        let width = self.width.unwrap_or(default);
+        f.pad(pad, width.saturating_sub(u16::MAX.into()))?;
+        Ok(width.min(u16::MAX.into()))
+    }
+
     /// Format nanoseconds with the specified precision.
-    #[allow(clippy::uninlined_format_args)] // for readability and symmetry between if branches
     fn format_nanoseconds(
         &self,
         f: &mut SizeLimiter<'_>,
@@ -335,38 +343,37 @@ impl Piece {
 
         if width <= 9 {
             let value = nanoseconds / 10u32.pow(9 - width as u32);
-            write!(f, "{value:0n$}", n = width)
+            write!(f, "{value:0width$}")
         } else {
-            write!(f, "{nanoseconds:09}{:0n$}", 0, n = width - 9)
+            write!(f, "{nanoseconds:09}")?;
+            f.pad(b'0', width - 9)
         }
     }
 
     /// Format a string value.
     fn format_string(&self, f: &mut SizeLimiter<'_>, s: &str) -> Result<(), Error> {
-        match self.width {
-            None => write!(f, "{s}"),
-            Some(width) => {
-                if self.flags.contains(Flag::LeftPadding) {
-                    write!(f, "{s}")
-                } else if self.padding == Padding::Zeros {
-                    write!(f, "{s:0>width$}")
-                } else {
-                    write!(f, "{s: >width$}")
-                }
-            }
+        if !self.flags.contains(Flag::LeftPadding) {
+            self.write_padding(f, s.len())?;
         }
+
+        write!(f, "{s}")
     }
 
     /// Write padding separately.
     fn write_padding(&self, f: &mut SizeLimiter<'_>, min_width: usize) -> Result<(), Error> {
-        if let Some(width) = self.width {
-            let n = width.saturating_sub(min_width);
+        let Some(width) = self.width else {
+            return Ok(());
+        };
 
-            match self.padding {
-                Padding::Zeros => write!(f, "{:0>n$}", "")?,
-                _ => write!(f, "{: >n$}", "")?,
-            };
-        }
+        let n = width.saturating_sub(min_width);
+
+        let pad = match self.padding {
+            Padding::Zeros => b'0',
+            _ => b' ',
+        };
+
+        f.pad(pad, n)?;
+
         Ok(())
     }
 
@@ -390,14 +397,34 @@ impl Piece {
         UtcOffset::new(hour, minute, second)
     }
 
-    /// Compute hour padding for the `%z` specifier.
-    fn hour_padding(&self, min_width: usize) -> usize {
-        const MIN_PADDING: usize = "+hh".len();
-
-        match self.width {
-            Some(width) => width.saturating_sub(min_width) + MIN_PADDING,
-            None => MIN_PADDING,
+    /// Write the hour sign.
+    fn write_hour_sign(f: &mut SizeLimiter<'_>, hour: f64) -> Result<(), Error> {
+        if hour.is_sign_negative() {
+            write!(f, "-")?;
+        } else {
+            write!(f, "+")?;
         }
+
+        Ok(())
+    }
+
+    /// Write the hour with padding for the `%z` specifier.
+    fn write_offset_hour(&self, f: &mut SizeLimiter<'_>, hour: f64, w: usize) -> Result<(), Error> {
+        let mut pad = self.width.unwrap_or(0).saturating_sub(w);
+
+        if hour < 10.0 {
+            pad += 1;
+        }
+
+        if self.padding == Padding::Spaces {
+            f.pad(b' ', pad)?;
+            Self::write_hour_sign(f, hour)?;
+        } else {
+            Self::write_hour_sign(f, hour)?;
+            f.pad(b'0', pad)?;
+        }
+
+        write!(f, "{:.0}", hour.abs())
     }
 
     /// Write the time zone UTC offset as `"+hh"`.
@@ -406,13 +433,7 @@ impl Piece {
         f: &mut SizeLimiter<'_>,
         utc_offset: &UtcOffset,
     ) -> Result<(), Error> {
-        let hour = utc_offset.hour;
-        let n = self.hour_padding("+hh".len());
-
-        match self.padding {
-            Padding::Spaces => write!(f, "{hour: >+n$.0}"),
-            _ => write!(f, "{hour:+0n$.0}"),
-        }
+        self.write_offset_hour(f, utc_offset.hour, "+hh".len())
     }
 
     /// Write the time zone UTC offset as `"+hhmm"`.
@@ -421,13 +442,10 @@ impl Piece {
         f: &mut SizeLimiter<'_>,
         utc_offset: &UtcOffset,
     ) -> Result<(), Error> {
-        let UtcOffset { hour, minute, .. } = utc_offset;
-        let n = self.hour_padding("+hhmm".len());
+        let UtcOffset { hour, minute, .. } = *utc_offset;
 
-        match self.padding {
-            Padding::Spaces => write!(f, "{hour: >+n$.0}{minute:02}"),
-            _ => write!(f, "{hour:+0n$.0}{minute:02}"),
-        }
+        self.write_offset_hour(f, hour, "+hhmm".len())?;
+        write!(f, "{minute:02}")
     }
 
     /// Write the time zone UTC offset as `"+hh:mm"`.
@@ -436,13 +454,10 @@ impl Piece {
         f: &mut SizeLimiter<'_>,
         utc_offset: &UtcOffset,
     ) -> Result<(), Error> {
-        let UtcOffset { hour, minute, .. } = utc_offset;
-        let n = self.hour_padding("+hh:mm".len());
+        let UtcOffset { hour, minute, .. } = *utc_offset;
 
-        match self.padding {
-            Padding::Spaces => write!(f, "{hour: >+n$.0}:{minute:02}"),
-            _ => write!(f, "{hour:+0n$.0}:{minute:02}"),
-        }
+        self.write_offset_hour(f, hour, "+hh:mm".len())?;
+        write!(f, ":{minute:02}")
     }
 
     /// Write the time zone UTC offset as `"+hh:mm:ss"`.
@@ -455,14 +470,10 @@ impl Piece {
             hour,
             minute,
             second,
-        } = utc_offset;
+        } = *utc_offset;
 
-        let n = self.hour_padding("+hh:mm:ss".len());
-
-        match self.padding {
-            Padding::Spaces => write!(f, "{hour: >+n$.0}:{minute:02}:{second:02}"),
-            _ => write!(f, "{hour:+0n$.0}:{minute:02}:{second:02}"),
-        }
+        self.write_offset_hour(f, hour, "+hh:mm:ss".len())?;
+        write!(f, ":{minute:02}:{second:02}")
     }
 
     /// Format time using the formatting directive.

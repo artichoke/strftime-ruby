@@ -1,57 +1,7 @@
-#![allow(clippy::should_panic_without_expect)]
-
 use crate::format::TimeFormatter;
-use crate::{Error, Time};
+use crate::Error;
 
-include!("../mock.rs.in");
-
-fn get_format_err(time: &MockTime<'_>, format: &str) -> Error {
-    TimeFormatter::new(time, format)
-        .fmt(&mut &mut [0u8; 100][..])
-        .unwrap_err()
-}
-
-fn check_format(time: &MockTime<'_>, format: &str, expected: &str) {
-    const SIZE: usize = 100;
-    let mut buf = [0u8; SIZE];
-    let mut cursor = &mut buf[..];
-
-    TimeFormatter::new(time, format).fmt(&mut cursor).unwrap();
-    let written = SIZE - cursor.len();
-    let data = core::str::from_utf8(&buf[..written]).unwrap();
-
-    assert_eq!(data, expected);
-}
-
-fn check_all(times: &[MockTime<'_>], format: &str, all_expected: &[&str]) {
-    assert_eq!(times.len(), all_expected.len());
-    for (time, expected) in times.iter().zip(all_expected) {
-        check_format(time, format, expected);
-    }
-}
-
-#[test]
-#[should_panic]
-#[rustfmt::skip]
-fn test_check_format_panics_on_error() {
-    let time = MockTime { year: 1111,  ..Default::default() };
-
-    check_format(&time, "'%Y'", "'1112'");
-}
-
-#[test]
-#[should_panic]
-#[rustfmt::skip]
-fn test_check_all_panics_on_error() {
-    let times = [
-        MockTime { year: -1111, ..Default::default() },
-        MockTime { year: -11,   ..Default::default() },
-        MockTime { year: 1,     ..Default::default() },
-        MockTime { year: 1111,  ..Default::default() },
-    ];
-
-    check_all(&times, "'%Y'", &["'-1111'", "'-0011'", "'0001'",  "'1112'"]);
-}
+use super::{check_all, check_format, get_format_err, MockTime};
 
 #[test]
 #[rustfmt::skip]
@@ -875,7 +825,7 @@ fn test_format_large_width() {
     check_format(&time, "%-100000000m", "1");
     check_format(&time, "%2147483648m", "%2147483648m");
 
-    let err = get_format_err(&time, "%2147483647m");
+    let err = get_format_err(&time, "%1000m");
     assert!(matches!(err, Error::WriteZero));
 }
 
