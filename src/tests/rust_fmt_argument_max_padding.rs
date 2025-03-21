@@ -39,6 +39,7 @@ fn test_larger_than_int_max_formats_are_returned_verbatim() {
         "%100000000000000000000c",
         "%1000000000000c",
         "%10000000000c",
+        "%2147483648c", // `INT_MAX + 1`
     ] {
         check_all(&times, format, &[format, format]);
     }
