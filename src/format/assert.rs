@@ -5,7 +5,10 @@ macro_rules! assert_sorted_by_key {
     ($s:expr, $f:expr) => {{
         let mut i = 0;
         while i + 1 < $s.len() {
-            assert!(*$f(&$s[i]) < *$f(&$s[i + 1]));
+            assert!(
+                *$f(&$s[i]) < *$f(&$s[i + 1]),
+                concat!("table is not sorted by ", stringify!($f))
+            );
             i += 1;
         }
         $s
@@ -30,18 +33,24 @@ pub(crate) const fn assert_sorted_elem_0<T>(s: &[(u8, T)]) -> &[(u8, T)] {
 /// Asserts that converting the first input to uppercase yields the second input.
 #[allow(dead_code)]
 pub(crate) const fn assert_to_ascii_uppercase(table: &[&str], upper_table: &[&str]) {
-    assert!(table.len() == upper_table.len());
+    assert!(
+        table.len() == upper_table.len(),
+        "tables must have the same length"
+    );
 
     let mut index = 0;
     while index < table.len() {
         let (s, upper_s) = (table[index].as_bytes(), upper_table[index].as_bytes());
-        assert!(s.len() == upper_s.len());
+        assert!(s.len() == upper_s.len(), "keys must have the same length");
 
         let mut i = 0;
         while i < s.len() {
-            assert!(s[i].is_ascii());
-            assert!(upper_s[i].is_ascii());
-            assert!(upper_s[i] == s[i].to_ascii_uppercase());
+            assert!(s[i].is_ascii(), "table key must be ascii");
+            assert!(upper_s[i].is_ascii(), "upper key must be ascii");
+            assert!(
+                upper_s[i] == s[i].to_ascii_uppercase(),
+                "upper key is not the uppercase of key"
+            );
             i += 1;
         }
 
@@ -50,7 +59,6 @@ pub(crate) const fn assert_to_ascii_uppercase(table: &[&str], upper_table: &[&st
 }
 
 #[cfg(test)]
-#[allow(clippy::should_panic_without_expect)]
 mod tests {
     use super::*;
 
@@ -60,7 +68,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "table is not sorted by core::convert::identity"]
     fn test_assert_sorted_invalid() {
         assert_sorted(&[1, 3, 2]);
     }
@@ -71,7 +79,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "table is not sorted by elem_0"]
     fn test_assert_sorted_elem_0_invalid() {
         assert_sorted_elem_0(&[(1, 3), (3, 2), (2, 1)]);
     }
@@ -82,14 +90,32 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "tables must have the same length"]
+    fn assert_to_ascii_uppercase_requires_equal_length_tables() {
+        assert_to_ascii_uppercase(&["aaa", "bbb"], &["AAA"]);
+    }
+
+    #[test]
+    #[should_panic = "upper key is not the uppercase of key"]
     fn test_assert_to_ascii_uppercase_invalid() {
         assert_to_ascii_uppercase(&["aaa"], &["AaA"]);
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic = "key must be ascii"]
     fn test_assert_to_ascii_uppercase_invalid_ascii() {
         assert_to_ascii_uppercase(&["€"], &["€"]);
+    }
+
+    #[test]
+    #[should_panic = "table key must be ascii"]
+    fn test_assert_to_ascii_uppercase_invalid_ascii_left() {
+        assert_to_ascii_uppercase(&["€"], &["$$$"]);
+    }
+
+    #[test]
+    #[should_panic = "upper key must be ascii"]
+    fn test_assert_to_ascii_uppercase_invalid_ascii_right() {
+        assert_to_ascii_uppercase(&["$$$"], &["€"]);
     }
 }
