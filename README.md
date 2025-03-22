@@ -37,7 +37,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-strftime-ruby = "1.2.0"
+strftime-ruby = "1.3.0"
 ```
 
 ## Crate features
@@ -45,15 +45,13 @@ strftime-ruby = "1.2.0"
 All features are enabled by default.
 
 - **std** - Enables a dependency on the Rust Standard Library. Activating this
-  feature enables implementations of [`std::error::Error`] on the error types in
-  this crate and the `strftime::io` module, which depends on [`std::io::Write`].
+  feature the `strftime::io` module, which depends on [`std::io::Write`].
   Activating this feature also activates the **alloc** feature.
 - **alloc** - Enables a dependency on the Rust [`alloc`] crate. Activating this
   feature enables the `strftime::bytes` and `stftime::string` modules, which
   depend on [`alloc::vec::Vec`] and [`alloc::string::String`]. When the
   **alloc** feature is enabled, this crate only uses [fallible allocation APIs].
 
-[`std::error::error`]: https://doc.rust-lang.org/std/error/trait.Error.html
 [`std::io::write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 [`alloc`]: https://doc.rust-lang.org/alloc/
 [`alloc::vec::vec`]: https://doc.rust-lang.org/alloc/vec/struct.Vec.html
