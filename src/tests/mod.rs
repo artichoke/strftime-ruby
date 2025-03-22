@@ -1,11 +1,11 @@
 mod error;
 mod format;
+mod mock;
 mod rust_fmt_argument_max_padding;
 
 use crate::format::TimeFormatter;
-use crate::{Error, Time};
-
-include!("../mock.rs.in");
+use crate::Error;
+pub(crate) use mock::MockTime;
 
 fn get_format_err(time: &MockTime<'_>, format: &str) -> Error {
     TimeFormatter::new(time, format)

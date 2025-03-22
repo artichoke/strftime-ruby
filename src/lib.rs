@@ -283,7 +283,7 @@ pub mod buffered {
     ///
     /// // Not shown: create a time implementation with the year 1970
     /// // let time = ...;
-    /// # include!("mock.rs.in");
+    /// # include!("tests/mock.rs");
     /// # fn main() -> Result<(), strftime::Error> {
     /// # let time = MockTime { year: 1970, ..Default::default() };
     /// assert_eq!(time.year(), 1970);
@@ -340,7 +340,7 @@ pub mod fmt {
     ///
     /// // Not shown: create a time implementation with the year 1970
     /// // let time = ...;
-    /// # include!("mock.rs.in");
+    /// # include!("tests/mock.rs");
     /// # fn main() -> Result<(), strftime::Error> {
     /// # let time = MockTime { year: 1970, ..Default::default() };
     /// assert_eq!(time.year(), 1970);
@@ -392,7 +392,7 @@ pub mod bytes {
     ///
     /// // Not shown: create a time implementation with the year 1970
     /// // let time = ...;
-    /// # include!("mock.rs.in");
+    /// # include!("tests/mock.rs");
     /// # fn main() -> Result<(), strftime::Error> {
     /// # let time = MockTime { year: 1970, ..Default::default() };
     /// assert_eq!(time.year(), 1970);
@@ -445,7 +445,7 @@ pub mod string {
     ///
     /// // Not shown: create a time implementation with the year 1970
     /// // let time = ...;
-    /// # include!("mock.rs.in");
+    /// # include!("tests/mock.rs");
     /// # fn main() -> Result<(), strftime::Error> {
     /// # let time = MockTime { year: 1970, ..Default::default() };
     /// assert_eq!(time.year(), 1970);
@@ -495,7 +495,7 @@ pub mod io {
     ///
     /// // Not shown: create a time implementation with the year 1970
     /// // let time = ...;
-    /// # include!("mock.rs.in");
+    /// # include!("tests/mock.rs");
     /// # fn main() -> Result<(), strftime::Error> {
     /// # let time = MockTime { year: 1970, ..Default::default() };
     /// assert_eq!(time.year(), 1970);
