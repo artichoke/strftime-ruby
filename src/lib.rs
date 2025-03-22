@@ -1,17 +1,26 @@
-#![forbid(unsafe_code)]
-#![warn(clippy::all)]
-#![warn(clippy::pedantic)]
-#![warn(clippy::cargo)]
-#![allow(clippy::cast_possible_truncation)]
-#![allow(unknown_lints)]
-#![warn(missing_copy_implementations)]
-#![warn(missing_debug_implementations)]
-#![warn(missing_docs)]
-#![warn(rust_2018_idioms)]
-#![warn(trivial_casts, trivial_numeric_casts)]
-#![warn(unsafe_op_in_unsafe_fn)]
-#![warn(unused_qualifications)]
-#![warn(variant_size_differences)]
+#![forbid(unsafe_code, reason = "this crate is not marked as `unsafe`")]
+#![warn(
+    clippy::all,
+    clippy::pedantic,
+    clippy::cargo,
+    reason = "artichoke standard clippy pragmas"
+)]
+#![allow(
+    unknown_lints,
+    clippy::cast_possible_truncation,
+    reason = "artichoke standard pragmas"
+)]
+#![warn(
+    missing_debug_implementations,
+    missing_docs,
+    rust_2018_idioms,
+    trivial_casts,
+    trivial_numeric_casts,
+    unsafe_op_in_unsafe_fn,
+    unused_qualifications,
+    variant_size_differences,
+    reason = "artichoke standard rust pragmas"
+)]
 // Enable feature callouts in generated documentation:
 // https://doc.rust-lang.org/beta/unstable-book/language-features/doc-cfg.html
 //
@@ -132,12 +141,12 @@ mod tests;
 
 /// Error type returned by the `strftime` functions.
 #[derive(Debug)]
-// To ensure the API is the same for all feature combinations, do not derive
-// `Copy`. The `OutOfMemory` variant (when it is enabled by `alloc`) contains a
-// member that is not `Copy`.
 #[non_exhaustive]
-#[allow(missing_copy_implementations)]
-#[allow(variant_size_differences)]
+#[allow(
+    missing_copy_implementations,
+    variant_size_differences,
+    reason = "when features are enabled, some variants wrap inner errors which may be larger and not Copy"
+)]
 pub enum Error {
     /// Provided time implementation returns invalid values.
     InvalidTime,
@@ -459,7 +468,10 @@ pub mod string {
     /// # Errors
     ///
     /// Can produce an [`Error`] when the formatting fails.
-    #[allow(clippy::missing_panics_doc)]
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "formatted string should be valid UTF-8"
+    )]
     pub fn strftime(time: &impl Time, format: &str) -> Result<String, Error> {
         let mut buf = Vec::new();
         TimeFormatter::new(time, format).fmt(&mut buf)?;

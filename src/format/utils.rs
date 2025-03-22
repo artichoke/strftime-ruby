@@ -104,12 +104,12 @@ impl<'a> SizeLimiter<'a> {
 }
 
 impl Write for SizeLimiter<'_> {
-    fn write(&mut self, buf: &[u8]) -> Result<usize, Error> {
-        if self.count.saturating_add(buf.len()) > self.size_limit {
+    fn write(&mut self, data: &[u8]) -> Result<usize, Error> {
+        if self.count.saturating_add(data.len()) > self.size_limit {
             return Err(Error::FormattedStringTooLarge);
         }
 
-        let written = self.inner.write(buf)?;
+        let written = self.inner.write(data)?;
         self.count += written;
         Ok(written)
     }
