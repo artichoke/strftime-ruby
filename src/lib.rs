@@ -112,7 +112,7 @@
 //! days in that year. The days before the first week are in the last week of
 //! the previous year.
 
-#![doc(html_root_url = "https://docs.rs/strftime-ruby/1.1.0")]
+#![doc(html_root_url = "https://docs.rs/strftime-ruby/1.3.0")]
 #![no_std]
 
 #[cfg(feature = "alloc")]
@@ -123,6 +123,7 @@ extern crate std;
 
 #[cfg(feature = "alloc")]
 use alloc::collections::TryReserveError;
+use core::error;
 
 mod format;
 
@@ -180,13 +181,13 @@ impl core::fmt::Display for Error {
     }
 }
 
-#[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-impl std::error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+impl error::Error for Error {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match self {
             Self::FmtError(inner) => Some(inner),
+            #[cfg(feature = "alloc")]
             Self::OutOfMemory(inner) => Some(inner),
+            #[cfg(feature = "std")]
             Self::IoError(inner) => Some(inner),
             _ => None,
         }
