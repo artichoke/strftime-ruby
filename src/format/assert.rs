@@ -1,3 +1,5 @@
+#![expect(clippy::indexing_slicing, reason = "const index is always in bounds")]
+
 //! Compile-time assert functions.
 
 /// Helper macro for implementing asserts.

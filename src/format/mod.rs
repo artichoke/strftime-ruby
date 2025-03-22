@@ -341,12 +341,15 @@ impl Piece {
     ) -> Result<(), Error> {
         let width = self.width.unwrap_or(default_width);
 
-        if width <= 9 {
-            let value = nanoseconds / 10u32.pow(9 - width as u32);
-            write!(f, "{value:0width$}")
-        } else {
-            write!(f, "{nanoseconds:09}")?;
-            f.pad(b'0', width - 9)
+        match u32::try_from(width) {
+            Ok(w) if w <= 9 => {
+                let value = nanoseconds / 10_u32.pow(9 - w);
+                write!(f, "{value:0width$}")
+            }
+            Ok(_) | Err(_) => {
+                write!(f, "{nanoseconds:09}")?;
+                f.pad(b'0', width - 9)
+            }
         }
     }
 
@@ -369,7 +372,7 @@ impl Piece {
 
         let pad = match self.padding {
             Padding::Zeros => b'0',
-            _ => b' ',
+            Padding::Left | Padding::Spaces => b' ',
         };
 
         f.pad(pad, n)?;
@@ -477,7 +480,7 @@ impl Piece {
     }
 
     /// Format time using the formatting directive.
-    #[allow(clippy::too_many_lines)]
+    #[expect(clippy::too_many_lines, reason = "must handle all enum cases")]
     fn fmt(&self, f: &mut SizeLimiter<'_>, time: &impl CheckedTime) -> Result<(), Error> {
         match self.spec {
             Spec::Year4Digits => {
@@ -488,16 +491,25 @@ impl Piece {
             Spec::YearDiv100 => self.format_num_zeros(f, time.year().div_euclid(100), 2),
             Spec::YearRem100 => self.format_num_zeros(f, time.year().rem_euclid(100), 2),
             Spec::Month => self.format_num_zeros(f, time.month()?, 2),
+            #[expect(
+                clippy::indexing_slicing,
+                reason = "month is validated to be in range 1..=12"
+            )]
             Spec::MonthName => {
-                let index = (time.month()? - 1) as usize;
+                let index = usize::from(time.month()? - 1);
                 if self.flags.has_change_or_upper_case() {
                     self.format_string(f, MONTHS_UPPER[index])
                 } else {
                     self.format_string(f, MONTHS[index])
                 }
             }
+            #[expect(clippy::string_slice, reason = "month names values are all ASCII")]
+            #[expect(
+                clippy::indexing_slicing,
+                reason = "month is validated to be in range 1..=12"
+            )]
             Spec::MonthNameAbbr => {
-                let index = (time.month()? - 1) as usize;
+                let index = usize::from(time.month()? - 1);
                 if self.flags.has_change_or_upper_case() {
                     self.format_string(f, &MONTHS_UPPER[index][..3])
                 } else {
@@ -583,16 +595,25 @@ impl Piece {
                 }
                 Ok(())
             }
+            #[expect(
+                clippy::indexing_slicing,
+                reason = "day of week is validated to be in range 0..=6"
+            )]
             Spec::WeekDayName => {
-                let index = time.day_of_week()? as usize;
+                let index = usize::from(time.day_of_week()?);
                 if self.flags.has_change_or_upper_case() {
                     self.format_string(f, DAYS_UPPER[index])
                 } else {
                     self.format_string(f, DAYS[index])
                 }
             }
+            #[expect(clippy::string_slice, reason = "day names values are all ASCII")]
+            #[expect(
+                clippy::indexing_slicing,
+                reason = "day of week is validated to be in range 0..=6"
+            )]
             Spec::WeekDayNameAbbr => {
-                let index = time.day_of_week()? as usize;
+                let index = usize::from(time.day_of_week()?);
                 if self.flags.has_change_or_upper_case() {
                     self.format_string(f, &DAYS_UPPER[index][..3])
                 } else {
@@ -650,6 +671,11 @@ impl Piece {
             Spec::Newline => self.format_string(f, "\n"),
             Spec::Tabulation => self.format_string(f, "\t"),
             Spec::Percent => self.format_string(f, "%"),
+            #[expect(clippy::string_slice, reason = "month and names values are all ASCII")]
+            #[expect(
+                clippy::indexing_slicing,
+                reason = "month and day are validated to be in range"
+            )]
             Spec::CombinationDateTime => {
                 const MIN_WIDTH_NO_YEAR: usize = "www mmm dd HH:MM:SS ".len();
 
@@ -664,8 +690,8 @@ impl Piece {
                     (&DAYS, &MONTHS)
                 };
 
-                let week_day_name = &day_names[time.day_of_week()? as usize][..3];
-                let month_name = &month_names[(time.month()? - 1) as usize][..3];
+                let week_day_name = &day_names[usize::from(time.day_of_week()?)][..3];
+                let month_name = &month_names[usize::from(time.month()? - 1)][..3];
                 let day = time.day()?;
                 let (hour, minute, second) = (time.hour()?, time.minute()?, time.second()?);
 
@@ -695,11 +721,13 @@ impl Piece {
 
                 write!(f, "{year:0default_year_width$}-{month:02}-{day:02}")
             }
+            #[expect(clippy::string_slice, reason = "month names values are all ASCII")]
+            #[expect(clippy::indexing_slicing, reason = "month is validated to be in range")]
             Spec::CombinationVmsDate => {
                 let year = time.year();
                 self.write_padding(f, "dd-mmm-".len() + year_width(year).max(4))?;
 
-                let month_name = &MONTHS_UPPER[(time.month()? - 1) as usize][..3];
+                let month_name = &MONTHS_UPPER[usize::from(time.month()? - 1)][..3];
                 let day = time.day()?;
 
                 write!(f, "{day: >2}-{month_name}-{year:04}")
@@ -747,6 +775,10 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
     }
 
     /// Format time using the format string.
+    #[expect(
+        clippy::indexing_slicing,
+        reason = "cursor is always within the bounds of the format string"
+    )]
     pub(crate) fn fmt(&self, buf: &mut dyn Write) -> Result<(), Error> {
         // Do nothing if the format string is empty
         if self.format.is_empty() {
@@ -784,6 +816,7 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
     }
 
     /// Parse a formatting directive.
+    #[expect(clippy::too_many_lines, reason = "must handle all enum cases")]
     fn parse_spec(cursor: &mut Cursor<'_>) -> Result<Option<Piece>, Error> {
         // Parse flags
         let mut padding = Padding::Left;
@@ -887,6 +920,10 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
 
             match cursor.next() {
                 Some(x) => match POSSIBLE_SPECS.binary_search_by_key(&x, |&(c, _)| c) {
+                    #[expect(
+                        clippy::indexing_slicing,
+                        reason = "index is returned from binary search"
+                    )]
                     Ok(index) => Some(POSSIBLE_SPECS[index].1),
                     Err(_) => None,
                 },
