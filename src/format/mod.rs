@@ -784,6 +784,7 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
     }
 
     /// Parse a formatting directive.
+    #[expect(clippy::too_many_lines, reason = "must handle all enum cases")]
     fn parse_spec(cursor: &mut Cursor<'_>) -> Result<Option<Piece>, Error> {
         // Parse flags
         let mut padding = Padding::Left;
@@ -801,10 +802,18 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
                     padding = Padding::Left;
                     flags.set(Flag::LeftPadding);
                 }
-                Some(&b'_') => padding = Padding::Spaces,
-                Some(&b'0') => padding = Padding::Zeros,
-                Some(&b'^') => flags.set(Flag::UpperCase),
-                Some(&b'#') => flags.set(Flag::ChangeCase),
+                Some(&b'_') => {
+                    padding = Padding::Spaces;
+                }
+                Some(&b'0') => {
+                    padding = Padding::Zeros;
+                }
+                Some(&b'^') => {
+                    flags.set(Flag::UpperCase);
+                }
+                Some(&b'#') => {
+                    flags.set(Flag::ChangeCase);
+                }
                 _ => break,
             }
             cursor.next();
@@ -828,9 +837,13 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
             const EXT_O_SPECS: &[u8] = assert_sorted(b"HIMSUVWdeklmuwy");
 
             match ext {
-                b'E' if EXT_E_SPECS.binary_search(&spec).is_ok() => cursor.next(),
-                b'O' if EXT_O_SPECS.binary_search(&spec).is_ok() => cursor.next(),
-                _ => None,
+                b'E' if EXT_E_SPECS.binary_search(&spec).is_ok() => {
+                    cursor.next();
+                }
+                b'O' if EXT_O_SPECS.binary_search(&spec).is_ok() => {
+                    cursor.next();
+                }
+                _ => {}
             };
         }
 
@@ -936,6 +949,7 @@ mod tests {
         assert_eq!(year_width(10), 2);
         assert_eq!(year_width(99), 2);
         assert_eq!(year_width(100), 3);
+        assert_eq!(year_width(2025), 4);
     }
 
     #[cfg(feature = "alloc")]
