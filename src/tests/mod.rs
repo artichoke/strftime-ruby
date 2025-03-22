@@ -7,12 +7,14 @@ use crate::format::TimeFormatter;
 use crate::Error;
 pub(crate) use mock::MockTime;
 
+#[track_caller]
 fn get_format_err(time: &MockTime<'_>, format: &str) -> Error {
     TimeFormatter::new(time, format)
         .fmt(&mut &mut [0u8; 100][..])
         .unwrap_err()
 }
 
+#[track_caller]
 fn check_format(time: &MockTime<'_>, format: &str, expected: &str) {
     const SIZE: usize = 100;
     let mut buf = [0u8; SIZE];
@@ -25,6 +27,7 @@ fn check_format(time: &MockTime<'_>, format: &str, expected: &str) {
     assert_eq!(data, expected);
 }
 
+#[track_caller]
 fn check_all(times: &[MockTime<'_>], format: &str, all_expected: &[&str]) {
     assert_eq!(times.len(), all_expected.len());
     for (time, expected) in times.iter().zip(all_expected) {
