@@ -116,8 +116,7 @@ impl<T: Time> CheckedTime for T {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    include!("../mock.rs.in");
+    use crate::tests::MockTime;
 
     fn check<T>(ok: bool, result: &Result<T, Error>) {
         if ok {

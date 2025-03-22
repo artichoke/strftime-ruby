@@ -1,18 +1,18 @@
 macro_rules! create_mock_time {
     ($($field_name:ident: $field_type:ty),*,) => {
         #[derive(Default, Clone, Copy)]
-        struct MockTime<'a> {
-            $($field_name: $field_type),*,
+        pub struct MockTime<'a> {
+            $(pub $field_name: $field_type),*,
         }
 
         impl<'a> MockTime<'a> {
             #[allow(clippy::too_many_arguments)]
-            fn new($($field_name: $field_type),*) -> Self {
+            pub fn new($($field_name: $field_type),*) -> Self {
                 Self { $($field_name),* }
             }
         }
 
-        impl<'a> Time for MockTime<'a> {
+        impl<'a> crate::Time for MockTime<'a> {
             $(fn $field_name(&self) -> $field_type { self.$field_name })*
         }
     };
