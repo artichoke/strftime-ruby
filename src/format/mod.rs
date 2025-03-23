@@ -846,6 +846,11 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
                 Some(&b'#') => {
                     flags.set(Flag::ChangeCase);
                 }
+                Some(byte) if !byte.is_ascii() => {
+                    // We've found a multi-byte UTF-8 character sequence.
+                    // All specifiers must be ASCII-only, so this is invalid.
+                    return Ok(None);
+                }
                 _ => break,
             }
             cursor.next();
@@ -930,15 +935,24 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
                 (b'z', Spec::TimeZoneOffsetHourMinute),
             ]);
 
-            match cursor.next() {
-                Some(x) => match POSSIBLE_SPECS.binary_search_by_key(&x, |&(c, _)| c) {
-                    #[expect(
-                        clippy::indexing_slicing,
-                        reason = "index is returned from binary search"
-                    )]
-                    Ok(index) => Some(POSSIBLE_SPECS[index].1),
-                    Err(_) => None,
-                },
+            match cursor.remaining().first() {
+                Some(x) if !x.is_ascii() => {
+                    // We've found a multi-byte UTF-8 character sequence.
+                    // All specifiers must be ASCII-only, so this is invalid.
+                    return Ok(None);
+                }
+                Some(x) => {
+                    cursor.next();
+
+                    match POSSIBLE_SPECS.binary_search_by_key(&x, |(c, _)| c) {
+                        #[expect(
+                            clippy::indexing_slicing,
+                            reason = "index is returned from binary search"
+                        )]
+                        Ok(index) => Some(POSSIBLE_SPECS[index].1),
+                        Err(_) => None,
+                    }
+                }
                 None => return Err(Error::InvalidFormatString),
             }
         } else if cursor.read_optional_tag(b"z") {

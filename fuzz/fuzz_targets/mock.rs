@@ -8,13 +8,6 @@ macro_rules! create_mock_time {
             $($field_name: $field_type),*,
         }
 
-        impl<'a> MockTime<'a> {
-            #[allow(clippy::too_many_arguments)]
-            fn new($($field_name: $field_type),*) -> Self {
-                Self { $($field_name),* }
-            }
-        }
-
         impl<'a> Time for MockTime<'a> {
             $(fn $field_name(&self) -> $field_type { self.$field_name })*
         }

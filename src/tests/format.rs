@@ -647,13 +647,15 @@ fn test_format_tabulation() {
 fn test_format_percent() {
     let times = [MockTime::default()];
 
-    check_all(&times, "'%%'",      &["'%'"]);
-    check_all(&times, "'%1%'",     &["'%'"]);
-    check_all(&times, "'%6%'",     &["'     %'"]);
-    check_all(&times, "'%-_#^6%'", &["'%'"]);
-    check_all(&times, "'%-0^6%'",  &["'%'"]);
-    check_all(&times, "'%0_#6%'",  &["'     %'"]);
-    check_all(&times, "'%_06%'",   &["'00000%'"]);
+    check_all(&times, "'%%'",       &["'%'"]);
+    check_all(&times, "'%%Q'",      &["'%Q'"]);
+    check_all(&times, "'%%%%%%%Q'", &["'%%%%Q'"]);
+    check_all(&times, "'%1%'",      &["'%'"]);
+    check_all(&times, "'%6%'",      &["'     %'"]);
+    check_all(&times, "'%-_#^6%'",  &["'%'"]);
+    check_all(&times, "'%-0^6%'",   &["'%'"]);
+    check_all(&times, "'%0_#6%'",   &["'     %'"]);
+    check_all(&times, "'%_06%'",    &["'00000%'"]);
 }
 
 #[test]
@@ -905,4 +907,24 @@ fn test_chrono_pr_966_week_numbers() {
             "2007-53-1",
         ],
     );
+}
+
+#[test]
+#[cfg(feature = "alloc")]
+fn test_multibyte_utf8_characters_after_percent_treated_as_literal() {
+    use alloc::string::String;
+
+    let time = MockTime::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, "");
+
+    for format in [
+        "\u{1e}%\u{02c9}0",
+        "%\u{076f}\u{2}",
+        "%\u{01af}",
+        "%10\u{94}\u{6}",
+        "%100000\u{94}\u{6}",
+    ] {
+        let mut buf = String::new();
+        crate::fmt::strftime(&time, format, &mut buf).unwrap();
+        assert_eq!(buf, format);
+    }
 }
