@@ -846,6 +846,11 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
                 Some(&b'#') => {
                     flags.set(Flag::ChangeCase);
                 }
+                Some(byte) if !byte.is_ascii() => {
+                    // We've found a multi-byte UTF-8 character sequence. All
+                    // specifiers must be ASCII-only, so this is invalid.
+                    return Ok(None);
+                }
                 _ => break,
             }
             cursor.next();
