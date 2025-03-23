@@ -916,7 +916,13 @@ fn test_multibyte_utf8_characters_after_percent_treated_as_literal() {
 
     let time = MockTime::new(1970, 1, 1, 0, 0, 0, 0, 4, 1, 0, false, 0, "");
 
-    for format in ["\u{1e}%ˉ0", "%ݯ\u{2}", "%Ư"] {
+    for format in [
+        "\u{1e}%\u{02c9}0",
+        "%\u{076f}\u{2}",
+        "%\u{01af}",
+        "%10\u{94}\u{6}",
+        "%100000\u{94}\u{6}",
+    ] {
         let mut buf = String::new();
         crate::fmt::strftime(&time, format, &mut buf).unwrap();
         assert_eq!(buf, format);
