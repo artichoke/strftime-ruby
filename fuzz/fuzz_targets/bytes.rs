@@ -1,9 +1,8 @@
 #![no_main]
 
-use libfuzzer_sys::fuzz_target;
-
 mod mock;
 
+use libfuzzer_sys::fuzz_target;
 use mock::MockTime;
 
 fuzz_target!(|data: (MockTime, &[u8])| {

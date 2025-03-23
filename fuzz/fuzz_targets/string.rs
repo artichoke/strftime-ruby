@@ -1,11 +1,9 @@
 #![no_main]
 
-use core::fmt;
-
-use libfuzzer_sys::fuzz_target;
-
 mod mock;
 
+use core::fmt;
+use libfuzzer_sys::fuzz_target;
 use mock::MockTime;
 
 struct LimitedBuf<'a> {
@@ -16,21 +14,17 @@ struct LimitedBuf<'a> {
 impl<'a> fmt::Write for LimitedBuf<'a> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         let bytes = s.as_bytes();
-        let remaining = self.buf.len().saturating_sub(self.pos);
-        let to_copy = remaining.min(bytes.len());
+        let remaining_buf = &mut self.buf[self.pos..];
 
-        if to_copy == 0 {
+        if remaining_buf.len() < bytes.len() {
+            // Signal that buffer was too small.
             return Err(fmt::Error);
         }
 
-        self.buf[self.pos..self.pos + to_copy].copy_from_slice(&bytes[..to_copy]);
-        self.pos += to_copy;
+        remaining_buf[..bytes.len()].copy_from_slice(bytes);
+        self.pos += bytes.len();
 
-        if to_copy < bytes.len() {
-            Err(fmt::Error) // signal that buffer was too small
-        } else {
-            Ok(())
-        }
+        Ok(())
     }
 }
 
