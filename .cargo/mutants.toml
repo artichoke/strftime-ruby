@@ -1,6 +1,7 @@
 exclude_re = [
-    "Cursor<'a>::next",                            # timeout
-    "year_width",                                  # timeout
-    "Flags::has_change_or_upper_case",             # false positive
-    "src/format/mod.rs:96:21: replace << with >>", # false positive
+    "replace -= with += in SizeLimiter<'a>::pad",          # timeout
+    "replace > with == in SizeLimiter<'a>::pad",           # timeout
+    "replace -= with /= in SizeLimiter<'a>::pad",          # timeout
+    "replace /= with %= in year_width",                    # timeout
+    "replace | with ^ in Flags::has_change_or_upper_case", # false positive: or and xor are equivalent here
 ]
