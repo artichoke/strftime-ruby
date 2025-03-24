@@ -121,7 +121,7 @@
 //! days in that year. The days before the first week are in the last week of
 //! the previous year.
 
-#![doc(html_root_url = "https://docs.rs/strftime-ruby/1.3.0")]
+#![doc(html_root_url = "https://docs.rs/strftime-ruby/1.3.1")]
 #![no_std]
 
 #[cfg(feature = "alloc")]
