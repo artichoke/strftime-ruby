@@ -787,6 +787,7 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
 
         // Use a size limiter to limit the maximum size of the resulting
         // formatted string
+        // Ref: <https://github.com/ruby/ruby/blob/v3_4_2/strftime.c#L921-L928>
         let size_limit = self.format.len().saturating_mul(512 * 1024);
         let mut f = SizeLimiter::new(buf, size_limit);
 

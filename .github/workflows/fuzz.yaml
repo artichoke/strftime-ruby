@@ -24,7 +24,10 @@ jobs:
         run: cargo install cargo-fuzz
 
       - name: Fuzz
-        run: cargo fuzz run bytes -- -max_total_time=1800 # 30 minutes
+        # run for 30 minutes with a 2GB memory limit and a maximum input length of 2048 bytes
+        # the maximum input length is set so that the formatter's size limiter will prevent
+        # allocating more memory than the memory limit
+        run: cargo fuzz run bytes -- -max_total_time=1800 -rss_limit_mb=2048 -max_len=2048
 
   string:
     name: Fuzz string
@@ -46,4 +49,7 @@ jobs:
         run: cargo install cargo-fuzz
 
       - name: Fuzz
-        run: cargo fuzz run string -- -max_total_time=1800 # 30 minutes
+        # run for 30 minutes with a 2GB memory limit and a maximum input length of 2048 bytes
+        # the maximum input length is set so that the formatter's size limiter will prevent
+        # allocating more memory than the memory limit
+        run: cargo fuzz run string -- -max_total_time=1800 -rss_limit_mb=2048 -max_len=2048
