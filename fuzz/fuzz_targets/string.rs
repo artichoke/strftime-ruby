@@ -30,7 +30,7 @@ impl<'a> fmt::Write for LimitedBuf<'a> {
 
 fuzz_target!(|data: (MockTime, &str)| {
     let (time, format) = data;
-    let _ignored = strftime::string::strftime(&time, format, &mut buf[..]);
+    let _ignored = strftime::string::strftime(&time, format);
 
     // Give each fuzzer input a 16kb buffer to write to.
     let mut buf = vec![0u8; 16 * 1024].into_boxed_slice();
