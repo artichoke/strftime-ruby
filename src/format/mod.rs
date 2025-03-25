@@ -984,6 +984,9 @@ fn year_width(year: i32) -> usize {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "alloc")]
+    use alloc::format;
+
     use super::*;
 
     #[test]
@@ -1002,11 +1005,90 @@ mod tests {
         assert_eq!(year_width(2025), 4);
     }
 
+    #[test]
+    fn test_all_flags_have_nonzero_discriminants() {
+        assert_ne!(Flag::LeftPadding as u8, 0);
+        assert_ne!(Flag::ChangeCase as u8, 0);
+        assert_ne!(Flag::UpperCase as u8, 0);
+    }
+
+    #[test]
+    fn test_all_flags_have_no_overlapping_bits() {
+        let flags = [Flag::LeftPadding, Flag::ChangeCase, Flag::UpperCase];
+
+        for left in flags {
+            for right in flags {
+                if left == right {
+                    continue;
+                }
+                // Ensure each flag uses a unique bit to prevent conflicts
+                // during bitwise operations.
+                let overlap = (left as u8) & (right as u8);
+                assert_eq!(overlap, 0, "Flags {left:?} and {right:?} overlap",);
+            }
+        }
+    }
+
+    #[test]
+    fn test_flags_contains() {
+        // Create a new Flags instance with default (no flags set).
+        let mut flags = Flags::default();
+        // Initially, no flags are set.
+        assert!(!flags.contains(Flag::LeftPadding));
+        assert!(!flags.contains(Flag::ChangeCase));
+        assert!(!flags.contains(Flag::UpperCase));
+
+        // Set LeftPadding and test again.
+        flags.set(Flag::LeftPadding);
+        assert!(flags.contains(Flag::LeftPadding));
+        // Other flags should still be false.
+        assert!(!flags.contains(Flag::ChangeCase));
+        assert!(!flags.contains(Flag::UpperCase));
+    }
+
+    #[test]
+    fn test_flags_set() {
+        let mut flags = Flags::default();
+
+        // Set ChangeCase and verify.
+        flags.set(Flag::ChangeCase);
+        assert!(flags.contains(Flag::ChangeCase));
+
+        // Set UpperCase and verify.
+        flags.set(Flag::UpperCase);
+        assert!(flags.contains(Flag::UpperCase));
+
+        // Also, the underlying value should be a combination of ChangeCase and UpperCase.
+        let expected = Flag::ChangeCase as u8 | Flag::UpperCase as u8;
+        assert_eq!(flags.0, expected);
+    }
+
+    #[test]
+    fn test_flags_has_change_or_upper_case() {
+        let mut flags = Flags::default();
+
+        // Initially, no case flags are set.
+        assert!(!flags.has_change_or_upper_case());
+
+        // Set ChangeCase and verify.
+        flags.set(Flag::ChangeCase);
+        assert!(flags.has_change_or_upper_case());
+
+        // Reset flags and test with UpperCase.
+        flags = Flags::default();
+        flags.set(Flag::UpperCase);
+        assert!(flags.has_change_or_upper_case());
+
+        // If both are set, it should still return true.
+        flags = Flags::default();
+        flags.set(Flag::ChangeCase);
+        flags.set(Flag::UpperCase);
+        assert!(flags.has_change_or_upper_case());
+    }
+
     #[cfg(feature = "alloc")]
     #[test]
     fn test_flag_debug_is_non_empty() {
-        use alloc::format;
-
         assert!(!format!("{:?}", Flag::LeftPadding).is_empty());
         assert!(!format!("{:?}", Flag::ChangeCase).is_empty());
         assert!(!format!("{:?}", Flag::UpperCase).is_empty());
@@ -1015,16 +1097,12 @@ mod tests {
     #[cfg(feature = "alloc")]
     #[test]
     fn test_flags_debug_is_non_empty() {
-        use alloc::format;
-
         assert!(!format!("{:?}", Flags::default()).is_empty());
     }
 
     #[cfg(feature = "alloc")]
     #[test]
     fn test_padding_debug_is_non_empty() {
-        use alloc::format;
-
         assert!(!format!("{:?}", Padding::Left).is_empty());
         assert!(!format!("{:?}", Padding::Spaces).is_empty());
         assert!(!format!("{:?}", Padding::Zeros).is_empty());
@@ -1033,8 +1111,6 @@ mod tests {
     #[cfg(feature = "alloc")]
     #[test]
     fn test_spec_debug_is_non_empty() {
-        use alloc::format;
-
         assert!(!format!("{:?}", Spec::Year4Digits).is_empty());
         assert!(!format!("{:?}", Spec::YearDiv100).is_empty());
         assert!(!format!("{:?}", Spec::YearRem100).is_empty());
@@ -1084,16 +1160,12 @@ mod tests {
     #[cfg(feature = "alloc")]
     #[test]
     fn test_utc_offset_debug_is_non_empty() {
-        use alloc::format;
-
         assert!(!format!("{:?}", UtcOffset::new(0.0, 0, 0)).is_empty());
     }
 
     #[cfg(feature = "alloc")]
     #[test]
     fn test_piece_debug_is_non_empty() {
-        use alloc::format;
-
         let piece = Piece::new(
             None,
             Padding::Spaces,
