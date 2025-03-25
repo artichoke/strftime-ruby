@@ -795,6 +795,11 @@ fn test_format_invalid() {
         let err = get_format_err(&time, format);
         assert!(matches!(err, Error::InvalidFormatString));
     }
+
+    for format in ["\0%", "\0%-4", "\0%-", "\0%-_"] {
+        let err = get_format_err(&time, format);
+        assert!(matches!(err, Error::InvalidFormatString));
+    }
 }
 
 #[test]
