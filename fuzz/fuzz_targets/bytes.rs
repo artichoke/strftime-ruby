@@ -7,7 +7,7 @@ use mock::MockTime;
 
 fuzz_target!(|data: (MockTime, &[u8])| {
     let (time, format) = data;
-    let _ignored = strftime::bytes::strftime(&time, format, &mut buf[..]);
+    let _ignored = strftime::bytes::strftime(&time, format);
 
     // Give each fuzzer input a 16kb buffer to write to.
     let mut buf = vec![0u8; 16 * 1024].into_boxed_slice();
