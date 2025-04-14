@@ -104,7 +104,7 @@ fn test_format_specifiers_large_width_success() {
                 );
             }
             _ => panic!("Output not properly quoted for specifier '{spec}': {output}"),
-        };
+        }
     }
 }
 
