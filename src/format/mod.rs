@@ -882,7 +882,7 @@ impl<'t, 'f, T: CheckedTime> TimeFormatter<'t, 'f, T> {
                     cursor.next();
                 }
                 _ => {}
-            };
+            }
         }
 
         // Parse spec
