@@ -2,7 +2,6 @@
 
 [![GitHub Actions](https://github.com/artichoke/strftime-ruby/workflows/CI/badge.svg)](https://github.com/artichoke/strftime-ruby/actions)
 [![Code Coverage](https://codecov.artichokeruby.org/strftime-ruby/badges/flat.svg?nocache=2)](https://codecov.artichokeruby.org/strftime-ruby/index.html)
-[![Discord](https://img.shields.io/discord/607683947496734760)](https://discord.gg/QCe2tp2)
 [![Twitter](https://img.shields.io/twitter/follow/artichokeruby?label=Follow&style=social)](https://twitter.com/artichokeruby)
 <br>
 [![Crate](https://img.shields.io/crates/v/strftime-ruby.svg)](https://crates.io/crates/strftime-ruby)
