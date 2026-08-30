@@ -6,6 +6,10 @@
 [![Crate](https://img.shields.io/crates/v/strftime-ruby.svg)](https://crates.io/crates/strftime-ruby)
 [![API](https://docs.rs/strftime-ruby/badge.svg)](https://docs.rs/strftime-ruby)
 
+> [!NOTE]  
+> This crate is feature complete and frozen. It will not receive further
+> development.
+
 `strftime-ruby` is a Ruby 3.1.2 compatible implementation of the
 [`Time#strftime`] method. The `strftime` routines provided by this crate are
 [POSIX-compatible], except for intentionally ignoring the `E` and `O` modified
@@ -34,7 +38,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-strftime-ruby = "1.3.1"
+strftime-ruby = "1.3.2"
 ```
 
 ## Crate features
