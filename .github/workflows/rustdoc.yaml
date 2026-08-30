@@ -20,7 +20,7 @@ jobs:
     name: Build Rust API docs
     runs-on: ubuntu-24.04
     permissions:
-      contents: write
+      contents: write # required to deploy documentation to gh-pages
     env:
       RUSTDOCFLAGS: -D warnings -D rustdoc::broken_intra_doc_links --cfg docsrs
       RUST_BACKTRACE: 1
