@@ -1,7 +1,6 @@
 # strftime-ruby
 
 [![GitHub Actions](https://github.com/artichoke/strftime-ruby/workflows/CI/badge.svg)](https://github.com/artichoke/strftime-ruby/actions)
-[![Code Coverage](https://codecov.artichokeruby.org/strftime-ruby/badges/flat.svg?nocache=2)](https://codecov.artichokeruby.org/strftime-ruby/index.html)
 [![Twitter](https://img.shields.io/twitter/follow/artichokeruby?label=Follow&style=social)](https://twitter.com/artichokeruby)
 <br>
 [![Crate](https://img.shields.io/crates/v/strftime-ruby.svg)](https://crates.io/crates/strftime-ruby)

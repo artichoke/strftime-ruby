@@ -9,42 +9,37 @@ name: Audit
       - trunk
   schedule:
     - cron: "0 0 * * TUE"
+permissions: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
-  ruby:
-    name: Audit Ruby Dependencies
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5.0.0
-
-      - name: Install Ruby toolchain
-        uses: ruby/setup-ruby@d5126b9b3579e429dd52e51e68624dda2e05be25 # v1.267.0
-        with:
-          ruby-version: ".ruby-version"
-          bundler-cache: true
-
-      - name: bundler-audit
-        run: bundle exec bundle-audit check --update
-
   rust:
     name: Audit Rust Dependencies
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     strategy:
       matrix:
         checks:
           - advisories
           - bans licenses sources
-
-    # Prevent sudden announcement of a new advisory from failing ci:
     continue-on-error: ${{ matrix.checks == 'advisories' }}
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install Rust toolchain
-        uses: artichoke/setup-rust/audit@v2.0.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup set profile minimal
+          rustup toolchain install stable --no-self-update
+          rustup default stable
+          rustc -Vv
+          cargo -V
 
       - name: Generate Cargo.lock
         run: |
@@ -52,8 +47,79 @@ jobs:
             cargo generate-lockfile --verbose
           fi
 
-      - uses: EmbarkStudios/cargo-deny-action@f2ba7abc2abebaf185c833c3961145a3c275caad # v2.0.13
+      - name: Run cargo-deny
+        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
         with:
           arguments: --locked --all-features
           command: check ${{ matrix.checks }}
           command-arguments: --show-stats
+
+  js:
+    name: Audit JS Dependencies
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup mise
+        id: mise
+        uses: ./.github/actions/setup-mise
+        with:
+          github-token: ${{ github.token }}
+
+      - name: Resolve toolchain versions
+        id: toolchains
+        uses: ./.github/actions/mise-tool-versions
+        with:
+          executable: ${{ steps.mise.outputs.executable }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ steps.toolchains.outputs.node }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm audit
+        run: pnpm audit
+
+  zizmor:
+    name: Run zizmor 🌈
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write # required to add findings via sarif
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup mise
+        id: mise
+        uses: ./.github/actions/setup-mise
+        with:
+          github-token: ${{ github.token }}
+
+      - name: Resolve toolchain versions
+        id: toolchains
+        uses: ./.github/actions/mise-tool-versions
+        with:
+          executable: ${{ steps.mise.outputs.executable }}
+
+      - name: Run zizmor 🌈
+        uses: zizmorcore/zizmor-action@3dc1ecc9bcb9e94e9b2c709687979e1298497054 # v0.6.2
+        with:
+          persona: "pedantic"
+          version: ${{ steps.toolchains.outputs.zizmor }}

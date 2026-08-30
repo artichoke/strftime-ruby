@@ -26,7 +26,6 @@
 //
 // This approach is borrowed from tokio.
 #![cfg_attr(docsrs, feature(doc_cfg))]
-#![cfg_attr(docsrs, feature(doc_alias))]
 
 //! This crate provides a Ruby 3.1.2 compatible `strftime` function, which
 //! formats time according to the directives in the given format string.

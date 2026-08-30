@@ -9,33 +9,43 @@ name: CI
       - trunk
   schedule:
     - cron: "0 0 * * WED"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
 jobs:
   build:
-    name: Build
-    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.name }})
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
         include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-          - os: macos-latest
-            target: x86_64-apple-darwin
+          - name: ubuntu-latest
+            runner: ubuntu-24.04
+          - name: windows-latest
+            runner: windows-2025-vs2026
+          - name: macos-latest
+            runner: macos-26
     env:
       RUSTFLAGS: -D warnings
       RUST_BACKTRACE: 1
-      CARGO_NET_GIT_FETCH_WITH_CLI: true
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install Rust toolchain
-        uses: artichoke/setup-rust/build-and-test@v2.0.1
-        with:
-          toolchain: stable
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup set profile minimal
+          rustup toolchain install stable --no-self-update
+          rustup default stable
+          rustc -Vv
+          cargo -V
 
       - name: Compile
         run: cargo build --verbose
@@ -51,29 +61,33 @@ jobs:
 
       - name: Test with no default features
         run: cargo test --no-default-features
-
-      - name: Test with only alloc feature
+      - name: Test additional feature configuration 1
         run: cargo test --no-default-features --features alloc
-
-      - name: Test with only alloc + std features
+      - name: Test additional feature configuration 2
         run: cargo test --no-default-features --features alloc,std
 
   build-msrv:
     name: Build (MSRV)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       CARGO_INCREMENTAL: 0
       RUSTFLAGS: -D warnings
       RUST_BACKTRACE: 1
-      CARGO_NET_GIT_FETCH_WITH_CLI: true
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install Rust toolchain
-        uses: artichoke/setup-rust/build-and-test@v2.0.1
-        with:
-          toolchain: "1.84.0"
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup set profile minimal
+          rustup toolchain install 1.84.0 --no-self-update
+          rustup default 1.84.0
+          rustc -Vv
+          cargo -V
 
       - name: Compile
         run: cargo build --verbose
@@ -92,19 +106,25 @@ jobs:
 
   rust:
     name: Lint and format Rust
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       RUSTFLAGS: -D warnings
       RUST_BACKTRACE: 1
-      CARGO_NET_GIT_FETCH_WITH_CLI: true
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install Rust toolchain
-        uses: artichoke/setup-rust/lint-and-format@v2.0.1
-        with:
-          toolchain: stable
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup set profile minimal
+          rustup toolchain install stable --component rustfmt --component clippy --no-self-update
+          rustup default stable
+          rustc -Vv
+          cargo -V
 
       - name: Check formatting
         run: cargo fmt --check
@@ -112,43 +132,40 @@ jobs:
       - name: Lint with Clippy
         run: cargo clippy --workspace --all-features --all-targets
 
-  ruby:
-    name: Lint and format Ruby
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5.0.0
-
-      - name: Install Ruby toolchain
-        uses: ruby/setup-ruby@d5126b9b3579e429dd52e51e68624dda2e05be25 # v1.267.0
-        with:
-          ruby-version: ".ruby-version"
-          bundler-cache: true
-
-      - name: Lint and check formatting with Rubocop
-        run: bundle exec rubocop --format github
-
   text:
     name: Lint and format text
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup mise
+        id: mise
+        uses: ./.github/actions/setup-mise
+        with:
+          github-token: ${{ github.token }}
+
+      - name: Resolve toolchain versions
+        id: toolchains
+        uses: ./.github/actions/mise-tool-versions
+        with:
+          executable: ${{ steps.mise.outputs.executable }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+        with:
+          run_install: false
 
       - name: Setup Node.js runtime
-        uses: actions/setup-node@v6.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "lts/*"
+          node-version: ${{ steps.toolchains.outputs.node }}
+          cache: pnpm
 
-      - name: Install toolchain
-        run: npm ci
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Format with prettier
-        run: npx prettier --check '**/*'
-
-      - name: Lint YAML sources with yamllint
-        run: |
-          yamllint --version
-          echo "Linting YAML sources with yamllint ..."
-          yamllint --strict --format github .
-          echo "OK"
+      - name: Format with Prettier
+        run: pnpm run fmt:check

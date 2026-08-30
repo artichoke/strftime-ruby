@@ -10,23 +10,35 @@ name: Documentation
   schedule:
     - cron: "0 0 * * TUE"
 concurrency:
-  group: docs-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 env:
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+permissions: {}
 jobs:
   rustdoc:
     name: Build Rust API docs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # required to deploy documentation to gh-pages
     env:
       RUSTDOCFLAGS: -D warnings -D rustdoc::broken_intra_doc_links --cfg docsrs
       RUST_BACKTRACE: 1
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: Install Rust toolchain
-        uses: artichoke/setup-rust/rustdoc@v2.0.1
+      - name: Install nightly Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup set profile minimal
+          rustup toolchain install nightly --no-self-update
+          rustup default nightly
+          rustc -Vv
+          cargo -V
 
       - name: Check docs with no default features
         run: cargo doc --workspace --no-default-features
@@ -34,11 +46,11 @@ jobs:
       - name: Clean docs
         run: cargo clean
 
-      - name: Build Documentation
+      - name: Build documentation
         run: cargo doc --workspace
 
-      - name: Deploy Docs
-        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v3.9.2
+      - name: Deploy docs
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
         if: github.ref == 'refs/heads/trunk'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -46,6 +58,4 @@ jobs:
           publish_branch: gh-pages
           user_name: artichoke-ci
           user_email: ci@artichokeruby.org
-          # only have the most recent docs in the `gh-pages` branch
-          # https://github.com/artichoke/artichoke/issues/1826
           force_orphan: true

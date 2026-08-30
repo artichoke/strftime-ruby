@@ -3,22 +3,29 @@ name: Fuzz
 "on":
   schedule:
     - cron: "0 0 * * *"
+permissions: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   bytes:
     name: Fuzz bytes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       RUST_BACKTRACE: 1
       CARGO_NET_GIT_FETCH_WITH_CLI: true
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5.0.0
-
-      - name: Install Rust toolchain
-        uses: artichoke/setup-rust/build-and-test@v2.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          toolchain: nightly
+          persist-credentials: false
+
+      - name: Install nightly Rust toolchain
+        run: |
+          rustup set profile minimal
+          rustup toolchain install nightly --no-self-update
+          rustup default nightly
 
       - name: Install cargo-fuzz
         run: cargo install cargo-fuzz
@@ -31,19 +38,22 @@ jobs:
 
   string:
     name: Fuzz string
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       RUST_BACKTRACE: 1
       CARGO_NET_GIT_FETCH_WITH_CLI: true
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5.0.0
-
-      - name: Install Rust toolchain
-        uses: artichoke/setup-rust/build-and-test@v2.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          toolchain: nightly
+          persist-credentials: false
+
+      - name: Install nightly Rust toolchain
+        run: |
+          rustup set profile minimal
+          rustup toolchain install nightly --no-self-update
+          rustup default nightly
 
       - name: Install cargo-fuzz
         run: cargo install cargo-fuzz
