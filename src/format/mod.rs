@@ -1025,7 +1025,7 @@ mod tests {
                 // Ensure each flag uses a unique bit to prevent conflicts
                 // during bitwise operations.
                 let overlap = (left as u8) & (right as u8);
-                assert_eq!(overlap, 0, "Flags {left:?} and {right:?} overlap",);
+                assert_eq!(overlap, 0, "Flags {left:?} and {right:?} overlap");
             }
         }
     }

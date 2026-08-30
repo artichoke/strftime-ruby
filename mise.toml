@@ -1,0 +1,80 @@
+[tools]
+node = "24.19.0"
+# Rust intentionally tracks the stable channel for this Rust library.
+rust = { version = "stable", profile = "minimal", components = "clippy,rustfmt" }
+"aqua:zizmorcore/zizmor" = "1.29.0"
+
+"cargo:cargo-deny" = "0.20.2"
+"cargo:cargo-mutants" = "27.1.0"
+"cargo:cargo-outdated" = "0.19.0"
+
+[hooks]
+postinstall = "corepack enable"
+
+[settings]
+experimental = true
+use_versions_host_track = false
+
+[env]
+_.path = ["{{config_root}}/node_modules/.bin"]
+
+[tasks.pnpm-install]
+description = "Install dependencies with pnpm when lockfile changes"
+run = "pnpm install"
+sources = ["package.json", "pnpm-lock.yaml", "mise.toml"]
+outputs = ["node_modules/.pnpm/lock.yaml"]
+
+
+[tasks.build]
+description = "Build Rust workspace"
+run = "cargo build --workspace"
+
+[tasks.doc]
+description = "Generate Rust API documentation"
+env = { RUSTDOCFLAGS = "-D warnings -D rustdoc::broken_intra_doc_links --cfg docsrs" }
+run = "rustup run --install nightly cargo doc --workspace"
+
+[tasks."doc:open"]
+description = "Generate Rust API documentation and open it in a browser"
+env = { RUSTDOCFLAGS = "-D warnings -D rustdoc::broken_intra_doc_links --cfg docsrs" }
+run = "rustup run --install nightly cargo doc --workspace --open"
+
+[tasks."fmt:rust"]
+description = "Format Rust sources"
+run = "cargo fmt --all"
+
+[tasks."fmt:text"]
+description = "Format text sources"
+run = "pnpm run fmt"
+
+[tasks.fmt]
+description = "Format all sources"
+depends = ["fmt:rust", "fmt:text"]
+
+[tasks."fmt:check:rust"]
+description = "Check Rust formatting"
+run = "cargo fmt --all -- --check"
+
+[tasks."fmt:check:text"]
+description = "Check text formatting"
+run = "pnpm run fmt:check"
+
+[tasks."fmt:check"]
+description = "Check formatting for all sources"
+depends = ["fmt:check:rust", "fmt:check:text"]
+
+[tasks."lint:clippy"]
+description = "Lint Rust sources with Clippy"
+run = "cargo clippy --workspace --all-features --all-targets"
+
+[tasks."lint:clippy:restriction"]
+description = "Run the unenforced Clippy restriction lint pass"
+run = "cargo clippy --workspace --all-features --all-targets -- -W clippy::dbg_macro -W clippy::get_unwrap -W clippy::indexing_slicing -W clippy::panic -W clippy::print_stdout -W clippy::expect_used -W clippy::unwrap_used -W clippy::todo -W clippy::unimplemented -W clippy::unreachable"
+
+[tasks.lint]
+description = "Lint all sources"
+depends = ["fmt:check", "lint:clippy"]
+
+[tasks.test]
+description = "Run Rust tests"
+run = "cargo test --workspace"

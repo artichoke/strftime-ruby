@@ -25,18 +25,6 @@ updates:
       - lopopolo
     labels:
       - A-deps
-  - package-ecosystem: bundler
-    directory: "/"
-    schedule:
-      interval: monthly
-    groups:
-      bundler-deps:
-        patterns:
-          - "*"
-    assignees:
-      - lopopolo
-    labels:
-      - A-deps
   - package-ecosystem: npm
     directory: "/"
     schedule:
