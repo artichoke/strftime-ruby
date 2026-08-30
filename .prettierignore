@@ -12,5 +12,8 @@ target/
 !*.yaml
 !*.yml
 
+pnpm-lock.yaml
+pnpm-workspace.yaml
+
 **/vendor/*
 !**/vendor/*.md
