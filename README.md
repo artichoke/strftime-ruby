@@ -5,7 +5,6 @@
 <br>
 [![Crate](https://img.shields.io/crates/v/strftime-ruby.svg)](https://crates.io/crates/strftime-ruby)
 [![API](https://docs.rs/strftime-ruby/badge.svg)](https://docs.rs/strftime-ruby)
-[![API trunk](https://img.shields.io/badge/docs-trunk-blue.svg)](https://artichoke.github.io/strftime-ruby/strftime/)
 
 `strftime-ruby` is a Ruby 3.1.2 compatible implementation of the
 [`Time#strftime`] method. The `strftime` routines provided by this crate are
