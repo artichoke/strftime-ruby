@@ -2,6 +2,10 @@
 
 Welcome to [Artichoke]. Thanks for taking the time to contribute.
 
+> [!NOTE]  
+> This crate is feature complete and frozen. It will not receive further
+> development.
+
 `strftime-ruby` implements Ruby-compatible `Time#strftime` formatting. If its
 formatting differs from Ruby or POSIX behavior, please [file an issue].
 
